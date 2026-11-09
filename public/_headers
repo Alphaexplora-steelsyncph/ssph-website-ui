@@ -1,0 +1,17 @@
+# Cloudflare Pages (also understood by Netlify). Vite puts a content hash in every file under /assets,
+# so they can be cached for a year; index.html must always be checked so new deploys show up.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Philippine address data (Contact us form). The PSGC release is in the folder name, so it never changes.
+/psgc/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/*.svg
+  Cache-Control: public, max-age=86400
+
+/index.html
+  Cache-Control: no-cache
+
+/
+  Cache-Control: no-cache

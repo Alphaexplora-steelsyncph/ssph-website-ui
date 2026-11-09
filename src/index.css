@@ -1,0 +1,98 @@
+@import "tailwindcss";
+
+@theme {
+  /* Brand palette: black rubber floor + chalk (Step 2, monochrome). Status colours stay Tailwind's
+     emerald / amber / red / sky so success, warnings and errors are still easy to tell apart. */
+  --color-ink: #0e0e0f;        /* page background */
+  --color-chalk: #f3efe6;      /* primary text, main buttons, highlights */
+  --color-chalk-2: #c9c4b8;    /* secondary text on dark */
+  --color-dim: #8b877f;        /* labels, hints */
+
+  /* Legacy token names kept so every screen picks the palette up without renaming classes */
+  --color-charcoal: #0e0e0f;   /* = ink */
+  --color-steel: #9d988f;      /* muted text (AA on every floor shade) */
+  --color-ember: #f3efe6;      /* accent = chalk (was orange #ff6800) */
+  --color-ember-600: #d8d3c7;  /* accent hover */
+  --color-coal-900: #121213;   /* header / sidebar */
+  --color-coal-800: #18181a;   /* cards */
+  --color-coal-700: #202023;   /* raised / hover */
+  --color-coal-600: #2a2a2d;   /* lines */
+  --color-coal-500: #3b3a37;   /* input borders */
+
+  --font-display: "Anton", "Arial Narrow", Impact, sans-serif;
+  --font-sans: "Inter Variable", "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  body {
+    background-color: var(--color-charcoal);
+    color: var(--color-chalk);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    /* Anton has one weight: never fake a bolder one */
+    font-synthesis-weight: none;
+  }
+  :focus-visible { outline: 2px solid var(--color-ember); outline-offset: 2px; }
+}
+
+/* ---------- Brand elements (chalk, tape, rubber floor) and motion ---------- */
+@layer components {
+  /* Black rubber gym floor: tiny speckles, pure CSS (no image download) */
+  .floor-speckle {
+    background-color: var(--color-coal-900);
+    background-image: radial-gradient(#26262a 1px, transparent 1.3px), radial-gradient(#1c1c1f 1px, transparent 1.3px);
+    background-size: 7px 7px, 11px 11px;
+    background-position: 0 0, 3px 5px;
+  }
+  /* Lifting-tape label, slightly crooked */
+  .tape {
+    display: inline-block;
+    width: fit-content;
+    max-width: 100%;
+    background: var(--color-chalk);
+    color: var(--color-ink);
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.4rem 0.85rem 0.35rem;
+    transform: rotate(-2deg);
+    clip-path: polygon(2% 0, 100% 4%, 98% 100%, 0 95%);
+  }
+  .tape-alt { transform: rotate(1.6deg); }
+  .text-outline { color: transparent; -webkit-text-stroke: 1.5px var(--color-chalk); }
+
+  /* "Load": a block slides in like a plate onto a bar and settles with a small thud. */
+  .load-in { opacity: 0; transform: translateX(-2.5rem); }
+  .load-in.is-in { animation: load-in 0.7s cubic-bezier(0.2, 0.9, 0.25, 1.15) forwards; animation-delay: var(--delay, 0s); }
+  .rise-in { opacity: 0; transform: translateY(1.75rem); }
+  .rise-in.is-in { animation: rise-in 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; animation-delay: var(--delay, 0s); }
+  /* "Chalk": an SVG stroke draws itself in */
+  .chalk-draw path { stroke-dasharray: var(--len, 1000); stroke-dashoffset: var(--len, 1000); }
+  .chalk-draw.is-in path { animation: chalk-draw 0.9s ease-out forwards; animation-delay: var(--delay, 0.15s); }
+  /* Endless strip of words */
+  .marquee { animation: marquee 32s linear infinite; }
+}
+
+@keyframes load-in { to { opacity: 1; transform: none; } }
+@keyframes rise-in { to { opacity: 1; transform: none; } }
+@keyframes chalk-draw { to { stroke-dashoffset: 0; } }
+@keyframes marquee { to { transform: translateX(-50%); } }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .load-in, .rise-in { opacity: 1; transform: none; }
+  .load-in.is-in, .rise-in.is-in, .chalk-draw.is-in path, .marquee { animation: none; }
+  .chalk-draw path { stroke-dashoffset: 0; }
+}
+
+/* Printing the gym QR poster (Settings → Check-in QR → Print poster) */
+@media print {
+  body { background: #fff; }
+  body * { visibility: hidden; }
+  .print-area, .print-area * { visibility: visible; }
+  .print-area { position: absolute; left: 50%; top: 2rem; transform: translateX(-50%) scale(1.6); transform-origin: top center; }
+}
