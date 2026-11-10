@@ -14,6 +14,7 @@ export const GymBillingHistory = ({ vm }: { vm: GymDetailVM }) => {
   const gym = vm.gym!
   const [voiding, setVoiding] = useState<BillingPeriodRow | null>(null) // UI-local
   const today = todayISO()
+  const staged = (period: string) => vm.stagedVoids.find((v) => v.period === period)
 
   return (
     <section className="rounded-xl border border-coal-600 bg-coal-800 p-5 sm:p-6">
@@ -46,11 +47,20 @@ export const GymBillingHistory = ({ vm }: { vm: GymDetailVM }) => {
                 >
                   {row.paid ? 'Paid' : late ? 'Unpaid' : 'Not yet due'}
                 </span>
-                {row.paid && gym.status !== 'Archived' && (
+                {staged(row.period) && (
+                  <span className="rounded-full bg-red-500/15 px-2.5 py-1 text-xs font-semibold text-red-300">Void on Save</span>
+                )}
+                {vm.editing && row.paid && gym.status !== 'Archived' && (
                   <RoleGuard requiredPermission={PERMISSIONS.PLATFORM_MANAGE_BILLING}>
-                    <button type="button" onClick={() => setVoiding(row)} className="text-xs font-semibold text-steel hover:text-red-400">
-                      Void
-                    </button>
+                    {staged(row.period) ? (
+                      <button type="button" onClick={() => vm.undoVoid(row.period)} className="text-xs font-semibold text-steel hover:text-zinc-100">
+                        Undo
+                      </button>
+                    ) : (
+                      <button type="button" onClick={() => setVoiding(row)} className="text-xs font-semibold text-steel hover:text-red-400">
+                        Void
+                      </button>
+                    )}
                   </RoleGuard>
                 )}
               </div>
@@ -63,9 +73,9 @@ export const GymBillingHistory = ({ vm }: { vm: GymDetailVM }) => {
         <VoidPaymentDialog
           row={voiding}
           gymName={gym.name}
-          isSaving={vm.busy === `void:${voiding.period}`}
-          onConfirm={async (reason) => {
-            if (await vm.voidPayment(voiding.period, reason)) setVoiding(null)
+          isSaving={false}
+          onConfirm={(reason) => {
+            if (vm.voidPayment(voiding.period, reason)) setVoiding(null)
           }}
           onClose={() => setVoiding(null)}
         />

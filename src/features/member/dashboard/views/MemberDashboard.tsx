@@ -2,6 +2,7 @@ import { memo } from 'react'
 import { GymCrowdCard } from './GymCrowdCard'
 import { GymEquipmentCard } from './GymEquipmentCard'
 import { MembershipSection } from './MembershipSection'
+import { MyPayments } from './MyPayments'
 import { RecentVisits } from './RecentVisits'
 import { ScanCheckInCard } from './ScanCheckInCard'
 
@@ -15,6 +16,7 @@ const MemberDashboard = memo(() => (
     </div>
     <GymEquipmentCard />
     <RecentVisits />
+    <MyPayments />
   </div>
 ))
 MemberDashboard.displayName = 'MemberDashboard'

@@ -6,6 +6,7 @@ import type { MemberDashboardVM } from '../viewModels/useMemberDashboardViewMode
 
 const STATUS_NOTE = {
   Pending: 'Your account is ready, but there is no membership on file yet. Please see the front desk to pay and activate it.',
+  Paused: 'Your monthly payment is due, so your membership is paused and check-in is off. Pay at the front desk to continue.',
   Expired: 'Your membership has expired. Renew at the front desk to keep checking in.',
   Terminated: 'This account has been terminated. Please see the front desk.',
 } as const
@@ -38,6 +39,15 @@ export const MembershipStatusCard = ({ vm }: { vm: MemberDashboardVM }) => {
             <dt className="text-xs uppercase tracking-wider text-steel">{status === 'Expired' ? 'Expired on' : 'Valid until'}</dt>
             <dd className={`mt-1 font-semibold ${status === 'Expired' ? 'text-amber-400' : ''}`}>{formatDate(member.expiresAt)}</dd>
           </div>
+          {member.paymentOption === 'monthly' && member.paidUntil && (
+            <div>
+              <dt className="text-xs uppercase tracking-wider text-steel">Paid until</dt>
+              <dd className={`mt-1 font-semibold ${status === 'Paused' ? 'text-amber-400' : ''}`}>{formatDate(member.paidUntil)}</dd>
+              <dd className="text-xs text-steel">
+                Installment · {member.installmentsPaid} of {member.installmentsTotal} months paid
+              </dd>
+            </div>
+          )}
         </dl>
       )}
 

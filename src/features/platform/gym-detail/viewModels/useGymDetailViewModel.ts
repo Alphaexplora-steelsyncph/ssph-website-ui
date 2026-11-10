@@ -1,25 +1,30 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../../../shared/auth/useAuth'
 import {
   ApiError,
   fetchPackages,
   fetchPlatformGym,
-  inviteGymAdmin,
-  resetGymAdminPassword,
-  setGymAdminDisabled,
   setGymArchived,
-  setGymFeatureOverride,
-  setGymMemberDues,
   setGymSuspended,
-  recordGymPayment,
-  uploadBillingProof,
-  voidGymPayment,
+  saveGymChanges,
   startImpersonation,
-  updateGymProfile,
 } from '../../../../shared/models/apiService'
-import type { FeatureKey } from '../../../../shared/features/featureCatalog'
-import type { GymDetail, GymProfileInput, PackageOption, RecordGymPaymentPayload } from '../../../../shared/models/types'
+import type { GymChanges, GymDetail, GymFeatureState, GymProfileInput, PackageOption, RecordGymPaymentPayload } from '../../../../shared/models/types'
+
+type NewPayment = Omit<RecordGymPaymentPayload, 'proofPath' | 'proofFileName'>
+
+const profileOf = (g: GymDetail): GymProfileInput => ({
+  name: g.name,
+  slug: g.slug,
+  address: g.address,
+  contactName: g.contactName,
+  contactEmail: g.contactEmail,
+  contactPhone: g.contactPhone,
+  packageId: g.packageId,
+  billingDay: g.billingDay,
+})
+const EMPTY_ADMINS = { invite: [] as string[], disable: [] as string[], enable: [] as string[], resetPassword: [] as string[] }
 
 export interface IssuedLink {
   title: string
@@ -41,8 +46,18 @@ export const useGymDetailViewModel = () => {
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [busy, setBusy] = useState<string | null>(null) // which action is running
-  const [issuedLink, setIssuedLink] = useState<IssuedLink | null>(null)
+  const [issuedLinks, setIssuedLinks] = useState<IssuedLink[]>([])
   const [profileVersion, setProfileVersion] = useState(0) // bumps to reset the profile form
+
+  /* ---------- edit mode: everything below is kept on the page until Save (one request) ---------- */
+  const [editing, setEditing] = useState(false)
+  const [profile, setProfile] = useState<GymProfileInput | null>(null)
+  const [memberDues, setMemberDuesDraft] = useState<boolean | null>(null)
+  const [features, setFeatures] = useState<Record<string, boolean | null>>({}) // staged overrides by feature key
+  const [admins, setAdmins] = useState(EMPTY_ADMINS)
+  const [voids, setVoids] = useState<{ period: string; reason: string }[]>([])
+  // "Record a payment" works on its own (no Edit needed); opened right away from a ?pay= link.
+  const [paymentOpen, setPaymentOpen] = useState(!!payFor)
 
   useEffect(() => {
     Promise.all([fetchPlatformGym(gymId), fetchPackages()])
@@ -73,73 +88,125 @@ export const useGymDetailViewModel = () => {
 
   const apply = (detail: GymDetail | undefined) => detail && setGym(detail)
 
-  const saveProfile = async (input: GymProfileInput) => {
-    const detail = await run('profile', () => updateGymProfile(gymId, input), 'Gym profile saved.')
-    if (detail) {
-      setGym(detail)
-      setProfileVersion((v) => v + 1)
+  const resetDrafts = (detail: GymDetail | null) => {
+    setProfile(detail ? profileOf(detail) : null)
+    setMemberDuesDraft(null)
+    setFeatures({})
+    setAdmins(EMPTY_ADMINS)
+    setVoids([])
+  }
+
+  const startEditing = () => {
+    resetDrafts(gym)
+    setNotice(null)
+    setError(null)
+    setEditing(true)
+  }
+  const cancelEditing = () => {
+    resetDrafts(gym)
+    setError(null)
+    setEditing(false)
+  }
+
+  const setProfileField = <K extends keyof GymProfileInput>(key: K, value: GymProfileInput[K]) =>
+    setProfile((p) => (p ? { ...p, [key]: value } : p))
+
+  /** Features as they will be after Save. */
+  const featureView = (f: GymFeatureState): GymFeatureState & { staged: boolean } => {
+    if (!(f.key in features)) return { ...f, staged: false }
+    const override = features[f.key]
+    return { ...f, override, enabled: override === null ? f.includedInPackage : override, staged: true }
+  }
+  const setFeature = (key: string, value: boolean | null) => {
+    const current = gym?.features.find((f) => f.key === key)
+    setFeatures((prev) => {
+      const next = { ...prev }
+      if (current && current.override === value) delete next[key]
+      else next[key] = value
+      return next
+    })
+  }
+
+  const memberDuesView = memberDues ?? gym?.memberDuesEnabled ?? false
+  const setMemberDues = (enabled: boolean) => setMemberDuesDraft(enabled === gym?.memberDuesEnabled ? null : enabled)
+
+  const toggleIn = (list: string[], id: string) => (list.includes(id) ? list.filter((x) => x !== id) : [...list, id])
+  /** Disable an active admin / enable a disabled one (toggling again undoes it). */
+  const toggleAdmin = (userId: string, disable: boolean) =>
+    setAdmins((a) => (disable ? { ...a, disable: toggleIn(a.disable, userId) } : { ...a, enable: toggleIn(a.enable, userId) }))
+  const resetPassword = (userId: string) => setAdmins((a) => ({ ...a, resetPassword: toggleIn(a.resetPassword, userId) }))
+  const inviteAdmin = (email: string) => {
+    const clean = email.trim().toLowerCase()
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)) {
+      setError('Enter a valid email address to invite.')
+      return false
     }
-    return !!detail
+    if (admins.invite.includes(clean) || gym?.admins.some((x) => x.email === clean)) {
+      setError(`${clean} is already on the list.`)
+      return false
+    }
+    setError(null)
+    setAdmins((a) => ({ ...a, invite: [...a.invite, clean] }))
+    return true
+  }
+  const removeInvite = (email: string) => setAdmins((a) => ({ ...a, invite: a.invite.filter((e) => e !== email) }))
+
+  const voidPayment = (period: string, reason: string) => {
+    setVoids((v) => [...v.filter((x) => x.period !== period), { period, reason }])
+    return true
+  }
+  const undoVoid = (period: string) => setVoids((v) => v.filter((x) => x.period !== period))
+  /** "Record a payment": saved right away in one request (the proof goes with it), without Edit. */
+  const recordPayment = async (record: NewPayment, proof: File | null) => {
+    const result = await run('pay', () => saveGymChanges(gymId, { billing: { record, void: [] } }, proof), 'Payment recorded.')
+    if (!result) return false
+    setGym(result.detail)
+    setPaymentOpen(false)
+    return true
+  }
+
+  /** What Save would send. */
+  const changes = useMemo((): GymChanges => {
+    if (!gym) return {}
+    const out: GymChanges = {}
+    if (profile && JSON.stringify(profile) !== JSON.stringify(profileOf(gym))) out.profile = profile
+    if (memberDues !== null) out.memberDuesEnabled = memberDues
+    const feats = Object.entries(features).map(([key, value]) => ({ key: key as GymFeatureState['key'], value }))
+    if (feats.length) out.features = feats
+    if (admins.invite.length || admins.disable.length || admins.enable.length || admins.resetPassword.length) out.admins = admins
+    if (voids.length) out.billing = { void: voids }
+    return out
+  }, [gym, profile, memberDues, features, admins, voids])
+  const isDirty = Object.keys(changes).length > 0
+
+  /** Save: every change in one request (the proof of payment goes with it). No changes = just leave edit mode. */
+  const save = async () => {
+    if (!isDirty) {
+      setEditing(false)
+      return
+    }
+    const result = await run('save', () => saveGymChanges(gymId, changes, null), 'Changes saved.')
+    if (!result) return
+    setGym(result.detail)
+    resetDrafts(result.detail)
+    setProfileVersion((v) => v + 1)
+    setEditing(false)
+    const links = result.issuedLinks.map((l) => ({
+      title: l.kind === 'invite' ? 'Gym admin invite' : 'Password reset link',
+      token: l.token,
+      email: l.email,
+      description:
+        l.kind === 'invite'
+          ? `Send this link to ${l.email} so they can set a password. The backend will email it automatically.`
+          : `Send this one-time link to ${l.email} so they can set a new password.`,
+    }))
+    setIssuedLinks(links)
   }
 
   const suspend = (note: string) => run('suspend', () => setGymSuspended(gymId, true, note), 'Gym suspended.').then(apply)
   const liftSuspension = () => run('suspend', () => setGymSuspended(gymId, false), 'Manual suspension lifted.').then(apply)
   const archive = () => run('archive', () => setGymArchived(gymId, true), 'Gym archived.').then(apply)
   const restore = () => run('archive', () => setGymArchived(gymId, false), 'Gym restored.').then(apply)
-
-  /** Proof first (private storage), then the payment that points to it. Resolves true when saved. */
-  const recordPayment = async (payload: Omit<RecordGymPaymentPayload, 'proofPath' | 'proofFileName'>, proof: File | null) => {
-    const detail = await run(
-      'pay',
-      async () => {
-        const uploaded = proof ? await uploadBillingProof(gymId, proof) : null
-        return recordGymPayment(gymId, { ...payload, proofPath: uploaded?.path, proofFileName: uploaded?.fileName })
-      },
-      'Payment recorded.',
-    )
-    apply(detail)
-    return !!detail
-  }
-
-  const voidPayment = async (period: string, reason: string) => {
-    const detail = await run(`void:${period}`, () => voidGymPayment(gymId, period, reason), 'Payment voided. The month is unpaid again.')
-    apply(detail)
-    return !!detail
-  }
-
-  const setMemberDues = (enabled: boolean) =>
-    run('memberDues', () => setGymMemberDues(gymId, enabled), enabled ? 'Member payment day turned on. The gym admin picks the day in Settings.' : 'Member payment day turned off.').then(apply)
-
-  const setFeature = (key: FeatureKey, value: boolean | null) =>
-    run(`feature:${key}`, () => setGymFeatureOverride(gymId, key, value)).then(apply)
-
-  const inviteAdmin = async (email: string) => {
-    const result = await run('invite', () => inviteGymAdmin(gymId, email), 'Admin invited.')
-    if (!result) return false
-    setGym(result.detail)
-    setIssuedLink({
-      title: 'Gym admin invite',
-      token: result.inviteToken,
-      email: email.trim().toLowerCase(),
-      description: `Send this link to ${email.trim()} so they can set a password. The backend will email it automatically.`,
-    })
-    return true
-  }
-
-  const toggleAdmin = (userId: string, disabled: boolean) =>
-    run(`admin:${userId}`, () => setGymAdminDisabled(gymId, userId, disabled), disabled ? 'Admin disabled.' : 'Admin enabled.').then(apply)
-
-  const resetPassword = async (userId: string) => {
-    const result = await run(`admin:${userId}`, () => resetGymAdminPassword(gymId, userId), 'Password reset link created.')
-    if (result) {
-      setIssuedLink({
-        title: 'Password reset link',
-        token: result.resetToken,
-        email: result.email,
-        description: `Send this one-time link to ${result.email} so they can set a new password.`,
-      })
-    }
-  }
 
   const viewAsGym = async () => {
     const session = await run('impersonate', () => startImpersonation(gymId))
@@ -151,10 +218,15 @@ export const useGymDetailViewModel = () => {
   }
 
   return {
-    gym, payFor, packages, isLoading, error, notice, busy, issuedLink, profileVersion,
-    clearIssuedLink: () => setIssuedLink(null),
-    saveProfile, suspend, liftSuspension, archive, restore, recordPayment, voidPayment, setFeature, setMemberDues,
-    inviteAdmin, toggleAdmin, resetPassword, viewAsGym,
+    gym, payFor, packages, isLoading, error, notice, busy, issuedLinks, profileVersion,
+    clearIssuedLink: (token: string) => setIssuedLinks((l) => l.filter((x) => x.token !== token)),
+    suspend, liftSuspension, archive, restore, viewAsGym,
+    editing, startEditing, cancelEditing, save, isDirty, isSaving: busy === 'save',
+    profile, setProfileField,
+    featureView, setFeature, memberDuesView, memberDuesStaged: memberDues !== null, setMemberDues,
+    stagedAdmins: admins, inviteAdmin, removeInvite, toggleAdmin, resetPassword,
+    stagedVoids: voids, voidPayment, undoVoid,
+    paymentOpen, openPayment: () => { setError(null); setPaymentOpen(true) }, closePayment: () => setPaymentOpen(false), recordPayment, isRecording: busy === 'pay',
   }
 }
 

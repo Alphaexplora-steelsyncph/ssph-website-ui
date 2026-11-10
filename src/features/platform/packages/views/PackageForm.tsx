@@ -25,7 +25,7 @@ export const PackageForm = ({ vm, title }: { vm: PackagesVM; title: string }) =>
       ))}
     </fieldset>
     <div className="mt-5 flex gap-3">
-      <Button onClick={vm.save} disabled={vm.isSaving}>{vm.isSaving ? 'Saving…' : 'Save package'}</Button>
+      <Button onClick={vm.save}>Keep package</Button>
       <Button variant="outline" onClick={vm.cancel}>Cancel</Button>
     </div>
   </div>

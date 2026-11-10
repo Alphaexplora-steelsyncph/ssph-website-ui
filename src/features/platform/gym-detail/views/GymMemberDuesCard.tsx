@@ -17,17 +17,16 @@ export const GymMemberDuesCard = ({ vm }: { vm: GymDetailVM }) => {
             until that day; their plan starts on it.
           </p>
         </div>
-        <RoleGuard requiredPermission={PERMISSIONS.PLATFORM_MANAGE_GYMS}>
-          <Switch
-            checked={gym.memberDuesEnabled}
-            disabled={vm.busy === 'memberDues'}
-            label={`Fixed member payment day for ${gym.name}`}
-            onChange={vm.setMemberDues}
-          />
-        </RoleGuard>
+        {vm.editing && (
+          <RoleGuard requiredPermission={PERMISSIONS.PLATFORM_MANAGE_GYMS}>
+            <Switch checked={vm.memberDuesView} label={`Fixed member payment day for ${gym.name}`} onChange={vm.setMemberDues} />
+          </RoleGuard>
+        )}
       </div>
       <p className="mt-3 text-sm">
-        {!gym.memberDuesEnabled ? (
+        {vm.memberDuesStaged ? (
+          <span className="font-semibold text-amber-400">Turns {vm.memberDuesView ? 'on' : 'off'} when you press Save</span>
+        ) : !gym.memberDuesEnabled ? (
           <span className="text-steel">Off. Members pay when they enroll, like before.</span>
         ) : gym.memberDueDay ? (
           <span className="font-semibold text-emerald-400">On · members pay every {ordinal(gym.memberDueDay)} of the month (set by the gym admin)</span>

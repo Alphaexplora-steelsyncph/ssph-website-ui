@@ -1,18 +1,30 @@
 import { ArrowLeft } from 'lucide-react'
+import { useState } from 'react'
+import type { MemberRecord } from '../../../../shared/models/types'
 import { Link } from 'react-router-dom'
 import { Avatar } from '../../../../shared/components/Avatar'
 import { StatusBadge } from '../../../../shared/components/StatusBadge'
 import { useMemberDetailViewModel } from '../viewModels/useMemberDetailViewModel'
 import { MemberProfileForm } from './MemberProfileForm'
+import { CollectBalanceDialog } from '../../members/views/CollectBalanceDialog'
+import { PayInstallmentDialog } from '../../members/views/PayInstallmentDialog'
 import { ReinstateMemberDialog } from '../../members/views/ReinstateMemberDialog'
 import { CheckInBlockCard } from './CheckInBlockCard'
 import { MemberPhotoControls } from './MemberPhotoControls'
+import { MemberPaymentDates } from './MemberPaymentDates'
+import { MemberPrivacyCard } from './MemberPrivacyCard'
 import { MemberVisitsCard } from './MemberVisitsCard'
-import { MembershipSummary } from './MembershipSummary'
+import { MembershipSummary, type SettleAction } from './MembershipSummary'
+import { SwitchToInstallmentDialog } from './SwitchToInstallmentDialog'
 
 /** Section that owns the ViewModel; the cards below are presentational. */
 export const MemberDetailPanel = ({ memberId }: { memberId: string }) => {
   const vm = useMemberDetailViewModel(memberId)
+  const [settling, setSettling] = useState<SettleAction | null>(null) // UI-local: the open payment dialog
+  const settled = (updated: MemberRecord) => {
+    vm.onUpgraded(updated) // keeps the photo, stores the updated member
+    setSettling(null)
+  }
 
   return (
     <div>
@@ -42,11 +54,21 @@ export const MemberDetailPanel = ({ memberId }: { memberId: string }) => {
           <div className="grid gap-6 lg:grid-cols-[3fr_2fr]">
             <div className="space-y-6">
               <MemberProfileForm vm={vm} />
-              <MembershipSummary member={vm.member} onUpgrade={vm.canEdit ? vm.openUpgrade : undefined} />
+              <MembershipSummary member={vm.member} onUpgrade={vm.canEdit ? vm.openUpgrade : undefined} onAction={vm.canEdit ? setSettling : undefined} />
               <CheckInBlockCard vm={vm} />
+              <MemberPrivacyCard member={vm.member} />
             </div>
-            <MemberVisitsCard vm={vm} />
+            <div className="space-y-6">
+              <MemberPaymentDates key={`${vm.member.installmentsPaid ?? 0}-${vm.member.expiresAt}-${vm.member.balanceDue}`} member={vm.member} />
+              <MemberVisitsCard vm={vm} />
+            </div>
           </div>
+          {settling === 'pay' && <PayInstallmentDialog member={vm.member} onClose={() => setSettling(null)} onUpdated={settled} />}
+          {settling === 'switch' && <SwitchToInstallmentDialog member={vm.member} onClose={() => setSettling(null)} onUpdated={settled} />}
+          {settling === 'collect' && <CollectBalanceDialog member={vm.member} onClose={() => setSettling(null)} onUpdated={settled} />}
+          {(settling === 'renew' || settling === 'reinstate') && (
+            <ReinstateMemberDialog member={vm.member} mode={settling} onClose={() => setSettling(null)} onReinstated={settled} />
+          )}
           {vm.upgradeOpen && <ReinstateMemberDialog member={vm.member} mode="upgrade" onClose={vm.closeUpgrade} onReinstated={vm.onUpgraded} />}
         </>
       )}

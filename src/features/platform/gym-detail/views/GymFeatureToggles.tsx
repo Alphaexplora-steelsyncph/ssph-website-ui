@@ -12,7 +12,7 @@ export const GymFeatureToggles = ({ vm }: { vm: GymDetailVM }) => {
         Included features follow the {gym.packageName} package. Switch one on or off to override it for this gym only.
       </p>
       <ul className="mt-4 divide-y divide-coal-600">
-        {gym.features.map((f) => (
+        {gym.features.map(vm.featureView).map((f) => (
           <li key={f.key} className="flex items-start justify-between gap-4 py-3">
             <div className="min-w-0">
               <p className="flex flex-wrap items-center gap-2 font-semibold">
@@ -30,7 +30,8 @@ export const GymFeatureToggles = ({ vm }: { vm: GymDetailVM }) => {
                       ? `Included in ${gym.packageName}`
                       : `Not in ${gym.packageName}`
                     : `Override: ${f.override ? 'on' : 'off'} for this gym`}
-                {f.override !== null && !f.alwaysOn && (
+                {f.staged && <span className="font-semibold text-amber-400"> · changes on Save</span>}
+                {vm.editing && f.override !== null && !f.alwaysOn && (
                   <RoleGuard requiredPermission={PERMISSIONS.PLATFORM_MANAGE_GYMS}>
                     {' · '}
                     <button type="button" onClick={() => vm.setFeature(f.key, null)} className="font-semibold text-ember hover:underline">
@@ -40,14 +41,20 @@ export const GymFeatureToggles = ({ vm }: { vm: GymDetailVM }) => {
                 )}
               </p>
             </div>
+            {vm.editing ? (
             <RoleGuard requiredPermission={PERMISSIONS.PLATFORM_MANAGE_GYMS}>
               <Switch
                 checked={f.enabled}
-                disabled={f.alwaysOn || vm.busy === `feature:${f.key}`}
+                disabled={f.alwaysOn}
                 label={`${f.label} for ${gym.name}`}
                 onChange={(next) => vm.setFeature(f.key, next === f.includedInPackage ? null : next)}
               />
             </RoleGuard>
+            ) : (
+              <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${f.enabled ? 'bg-emerald-500/15 text-emerald-400' : 'bg-coal-600 text-steel'}`}>
+                {f.enabled ? 'On' : 'Off'}
+              </span>
+            )}
           </li>
         ))}
       </ul>

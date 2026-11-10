@@ -1,5 +1,6 @@
 import { CityField } from '../../../../shared/components/CityField'
 import { FormCard } from '../../../../shared/components/FormCard'
+import { PrivacyConsentField } from '../../../../shared/components/PrivacyConsentField'
 import { TextField } from '../../../../shared/components/TextField'
 import type { AddExistingMemberVM } from '../viewModels/useAddExistingMemberViewModel'
 
@@ -15,5 +16,6 @@ export const ExistingMemberDetailsFields = ({ vm }: { vm: AddExistingMemberVM })
       <CityField value={vm.city} onChange={vm.setCity} className="sm:col-span-2" />
     </div>
     <p className="mt-4 text-sm text-steel">The member uses this email to create their login and scan the gym QR.</p>
+    <PrivacyConsentField checked={vm.privacyConsent} onChange={vm.setPrivacyConsent} error={vm.fieldErrors.privacyConsent} />
   </FormCard>
 )

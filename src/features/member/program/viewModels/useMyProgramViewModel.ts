@@ -19,7 +19,7 @@ export const useMyProgramViewModel = () => {
 
   const exporter = useProgramExport(data?.program?.title ?? '', user?.fullName)
   const profile = data?.profile
-  const hasProfile = !!profile && (!!profile.weightKg || !!profile.heightCm || !!profile.remarks)
+  const hasProfile = !!profile && !!profile.remarks
 
   return {
     isLoading: !data && !error,

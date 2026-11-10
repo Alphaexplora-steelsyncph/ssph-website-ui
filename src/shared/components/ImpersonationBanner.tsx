@@ -29,7 +29,7 @@ export const ImpersonationBanner = () => {
       <p className="flex items-center gap-2">
         <Eye size={16} className="shrink-0" />
         <span>
-          Viewing <span className="font-semibold">{user.gymName}</span> as Alphaexplora support · read only · ends{' '}
+          Viewing <span className="font-semibold">{user.gymName}</span> as ALPHAEXPLORA support · read only · ends{' '}
           {formatTime(user.impersonation.expiresAt)} ({minutesLeft} min left)
         </span>
       </p>

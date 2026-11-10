@@ -25,7 +25,9 @@ export const LandingFooter = ({ vm }: { vm: LandingVM }) => (
       </div>
     </div>
     <p className="border-t border-coal-600 py-4 text-center font-mono text-xs text-steel">
-      © {new Date().getFullYear()} {vm.productName} by {COMPANY_NAME}
+      © {new Date().getFullYear()} {vm.productName} by {COMPANY_NAME} ·{' '}
+      <Link to="/privacy" className="hover:underline">Privacy Policy</Link> ·{' '}
+      <Link to="/terms" className="hover:underline">Terms</Link>
     </p>
   </footer>
 )

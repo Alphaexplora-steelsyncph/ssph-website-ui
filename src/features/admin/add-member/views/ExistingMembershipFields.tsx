@@ -1,4 +1,6 @@
 import { FormCard } from '../../../../shared/components/FormCard'
+import { PaymentOptionFields } from '../../../../shared/components/PaymentOptionFields'
+import { formatDate } from '../../../../shared/utils/format'
 import { TextField } from '../../../../shared/components/TextField'
 import type { AddExistingMemberVM } from '../viewModels/useAddExistingMemberViewModel'
 
@@ -30,6 +32,21 @@ export const ExistingMembershipFields = ({ vm }: { vm: AddExistingMemberVM }) =>
       <TextField label="Current plan ends on" type="date" min={vm.memberSince || undefined} value={vm.expiresAt}
         onChange={(e) => vm.setExpiresAt(e.target.value)} error={vm.fieldErrors.expiresAt} />
     </div>
+    <div className="mt-5">
+      <PaymentOptionFields
+        plan={vm.selectedPlan}
+        option={vm.paymentOption}
+        onOption={vm.setPaymentOption}
+        months={vm.monthsAlreadyPaid}
+        onMonths={vm.setMonthsAlreadyPaid}
+        paidUntil={vm.paidUntil}
+        monthsMode="already"
+      />
+      {vm.installment && vm.termStart && (
+        <p className="mt-2 text-xs text-steel">The installment plan is counted from {formatDate(vm.termStart)} to the end date above.</p>
+      )}
+    </div>
+    {!vm.installment && (
     <div className="mt-5 grid gap-5 sm:grid-cols-2">
       <TextField label="Still owes the gym (₱, optional)" type="number" inputMode="decimal" min="0" step="0.01" placeholder="0.00"
         value={vm.balanceAmount} onChange={(e) => vm.setBalanceAmount(e.target.value)} error={vm.fieldErrors.balance} />
@@ -38,12 +55,14 @@ export const ExistingMembershipFields = ({ vm }: { vm: AddExistingMemberVM }) =>
           onChange={(e) => vm.setBalanceDueOn(e.target.value)} error={vm.fieldErrors.dueOn} />
       )}
     </div>
+    )}
     <p className="mt-4 text-sm text-steel">
       The end date is suggested from the plan and member-since date. Change it to match your records.
       {vm.status && (
         <>
           {' '}This member will show as{' '}
-          <span className={vm.status === 'Active' ? 'font-semibold text-emerald-400' : 'font-semibold text-amber-400'}>{vm.status}</span>.
+          <span className={vm.status === 'Active' ? 'font-semibold text-emerald-400' : vm.status === 'Paused' ? 'font-semibold text-orange-400' : 'font-semibold text-amber-400'}>{vm.status}</span>
+          {vm.status === 'Paused' ? ' until the missed months are paid' : ''}.
         </>
       )}
     </p>

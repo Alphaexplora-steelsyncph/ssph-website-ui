@@ -18,6 +18,7 @@ export const usePlatformSettingsViewModel = () => {
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [editing, setEditing] = useState(false) // read-only until Edit; Save sends everything in one request
 
   useEffect(() => {
     fetchPlatformSettings()
@@ -53,14 +54,26 @@ export const usePlatformSettingsViewModel = () => {
 
   const isDirty = !!draft && JSON.stringify(draft) !== JSON.stringify(saved)
 
+  const startEditing = () => {
+    if (saved) setDraft(saved)
+    setNotice(null)
+    setError(null)
+    setEditing(true)
+  }
+
   const save = async () => {
     if (!draft) return
+    if (!isDirty) {
+      setEditing(false)
+      return
+    }
     try {
       setIsSaving(true)
       const next = await updatePlatformSettings(draft)
       setDraft(next)
       setSaved(next)
       setNotice('Settings saved. New values apply to every gym right away.')
+      setEditing(false)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not save settings.')
     } finally {
@@ -68,9 +81,14 @@ export const usePlatformSettingsViewModel = () => {
     }
   }
 
-  const discard = () => saved && edit(saved)
+  /** Cancel: throw the changes away (no request) and go back to read-only. */
+  const discard = () => {
+    if (saved) setDraft(saved)
+    setError(null)
+    setEditing(false)
+  }
 
-  return { draft, error, notice, isSaving, isDirty, setNumber, toggleMethod, setPlan, addPlan, removePlan, save, discard }
+  return { draft, error, notice, isSaving, isDirty, editing, startEditing, setNumber, toggleMethod, setPlan, addPlan, removePlan, save, discard }
 }
 
 export type PlatformSettingsVM = ReturnType<typeof usePlatformSettingsViewModel>

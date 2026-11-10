@@ -78,6 +78,9 @@ const GymPortal = memo(({ slug }: { slug: string }) => {
         <a href={vm.mainSite} className="text-chalk-2 hover:text-chalk">
           {vm.productName}
         </a>
+        <span className="mt-2 block normal-case tracking-normal">
+          <Link to="/privacy" className="hover:text-chalk">Privacy Policy</Link> · <Link to="/terms" className="hover:text-chalk">Terms</Link>
+        </span>
       </footer>
     </div>
   )

@@ -1,5 +1,6 @@
 import { Pencil } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import type { ContactFormVM, ContactStep } from '../viewModels/useContactFormViewModel'
 
 const Block = ({ title, onEdit, rows }: { title: string; onEdit: () => void; rows: [string, ReactNode][] }) => (
@@ -56,6 +57,32 @@ export const ContactReviewStep = ({ vm }: { vm: ContactFormVM }) => {
       <p className="text-sm text-steel">
         We&apos;ll email a copy to <span className="text-chalk">{vm.person.email.trim()}</span>. No spam, and your details are only used to reply to you.
       </p>
+      <div>
+        <label className="flex items-start gap-3 rounded-lg border border-coal-600 px-4 py-3 text-sm">
+          <input
+            type="checkbox"
+            checked={vm.consent}
+            onChange={(e) => vm.setConsent(e.target.checked)}
+            aria-describedby={vm.errors.consent ? 'consent-error' : undefined}
+            className="mt-0.5 h-4 w-4 shrink-0 accent-[#f3efe6]"
+          />
+          <span>
+            <span className="font-medium text-chalk">I agree that SteelSync may use these details to reply to my inquiry.</span>
+            <span className="mt-1 block text-steel">
+              We use your name, email, phone and gym details only to answer you and set up a demo. Read the{' '}
+              <Link to="/privacy" target="_blank" rel="noopener noreferrer" className="font-semibold underline underline-offset-4">
+                Privacy Policy
+              </Link>
+              .
+            </span>
+          </span>
+        </label>
+        {vm.errors.consent && (
+          <p id="consent-error" role="alert" className="mt-2 text-sm text-red-300">
+            {vm.errors.consent}
+          </p>
+        )}
+      </div>
       {vm.sendError && (
         <p role="alert" className="rounded-lg bg-red-500/10 px-4 py-3 text-sm text-red-300">
           {vm.sendError}

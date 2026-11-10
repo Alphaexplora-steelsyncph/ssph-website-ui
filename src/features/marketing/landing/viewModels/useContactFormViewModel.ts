@@ -22,7 +22,7 @@ export interface ContactPerson {
   phone: string
 }
 
-type Field = keyof ContactPerson | 'gymName' | 'region' | 'province' | 'city' | 'barangay' | 'street' | 'landmark'
+type Field = keyof ContactPerson | 'consent' | 'gymName' | 'region' | 'province' | 'city' | 'barangay' | 'street' | 'landmark'
 type Errors = Partial<Record<Field, string>>
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
@@ -48,6 +48,7 @@ export const useContactFormViewModel = () => {
   const [address, setAddress] = useState<PhAddress>(emptyAddress)
   const [landmark, setLandmark] = useState('')
   const [website, setWebsite] = useState('') // honeypot: hidden from people
+  const [consent, setConsentState] = useState(false) // agrees to the privacy notice (needed to send)
   const [errors, setErrors] = useState<Errors>({})
 
   const [places, setPlaces] = useState<PhPlaces | null>(null)
@@ -197,6 +198,10 @@ export const useContactFormViewModel = () => {
       goTo(Object.keys(personErrors).length ? 0 : 1)
       return
     }
+    if (!consent) {
+      setErrors({ consent: 'Please agree to the privacy notice to send your message.' })
+      return
+    }
     try {
       setIsSending(true)
       setSendError(null)
@@ -216,6 +221,7 @@ export const useContactFormViewModel = () => {
           street: address.street.trim(),
         },
         landmark: landmark.trim(),
+        privacyConsent: true,
         website,
       })
       setResult(res)
@@ -233,6 +239,7 @@ export const useContactFormViewModel = () => {
     setAddress(emptyAddress())
     setLandmark('')
     setErrors({})
+    setConsentState(false)
     setResult(null)
     setStep(0)
   }
@@ -276,6 +283,11 @@ export const useContactFormViewModel = () => {
     },
     website,
     setWebsite,
+    consent,
+    setConsent: (v: boolean) => {
+      setConsentState(v)
+      clearError('consent')
+    },
     errors,
     fullAddress,
     mapsUrl: mapsSearchUrl(`${gymName.trim() ? `${gymName.trim()}, ` : ''}${fullAddress}`),

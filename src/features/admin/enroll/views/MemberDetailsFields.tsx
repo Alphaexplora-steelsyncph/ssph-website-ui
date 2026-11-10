@@ -1,6 +1,7 @@
 import { Camera, X } from 'lucide-react'
 import { CityField } from '../../../../shared/components/CityField'
 import { PhotoCapture } from '../../../../shared/components/PhotoCapture'
+import { PrivacyConsentField } from '../../../../shared/components/PrivacyConsentField'
 import { TextField } from '../../../../shared/components/TextField'
 import type { EnrollMemberVM } from '../viewModels/useEnrollMemberViewModel'
 import { FormCard } from '../../../../shared/components/FormCard'
@@ -69,6 +70,7 @@ export const MemberDetailsFields = ({ vm }: { vm: EnrollMemberVM }) => (
         )}
       </div>
     </div>
+    <PrivacyConsentField checked={vm.privacyConsent} onChange={vm.setPrivacyConsent} error={vm.fieldErrors.privacyConsent} />
     {vm.capturing && <PhotoCapture title="New member photo" onCapture={vm.acceptPhoto} onClose={vm.closeCapture} />}
   </FormCard>
 )

@@ -2,7 +2,7 @@ import type { DurationUnit } from '../models/types'
 import { addDays } from './dates'
 
 /**
- * Gyms with a fixed member payment day (set by Alphaexplora). Mirrors the backend's shared/domain/memberDues.js;
+ * Gyms with a fixed member payment day (set by ALPHAEXPLORA). Mirrors the backend's shared/domain/memberDues.js;
  * the server re-checks everything.
  */
 export const isLongPlan = (plan: { durationValue: number; durationUnit: DurationUnit }) =>

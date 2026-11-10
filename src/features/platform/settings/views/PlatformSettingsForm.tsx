@@ -1,4 +1,7 @@
+import { Check, Pencil, X } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { RoleGuard } from '../../../../shared/auth/RoleGuard'
+import { PERMISSIONS } from '../../../../shared/auth/permissions'
 import { Button } from '../../../../shared/components/Button'
 import { TextField } from '../../../../shared/components/TextField'
 import { ALL_PAYMENT_METHODS, usePlatformSettingsViewModel, type NumericSetting } from '../viewModels/usePlatformSettingsViewModel'
@@ -23,6 +26,28 @@ export const PlatformSettingsForm = () => {
 
   return (
     <div className="max-w-4xl space-y-6">
+      <RoleGuard requiredPermission={PERMISSIONS.PLATFORM_MANAGE_SETTINGS}>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className={`text-sm ${vm.editing ? 'text-amber-400' : 'text-steel'}`}>
+            {vm.editing
+              ? vm.isDirty
+                ? 'You have unsaved changes. Press Save to apply them, or Cancel to discard.'
+                : 'Editing. Changes are kept here until you press Save.'
+              : 'Read only. Press Edit to change the settings.'}
+          </p>
+          <div className="flex gap-2">
+            {vm.editing ? (
+              <>
+                <Button variant="outline" onClick={vm.discard} disabled={vm.isSaving}><X size={18} /> Cancel</Button>
+                <Button onClick={vm.save} disabled={vm.isSaving}><Check size={18} /> {vm.isSaving ? 'Saving…' : 'Save'}</Button>
+              </>
+            ) : (
+              <Button variant="outline" onClick={vm.startEditing}><Pencil size={18} /> Edit</Button>
+            )}
+          </div>
+        </div>
+      </RoleGuard>
+      <fieldset disabled={!vm.editing} className="space-y-6 disabled:opacity-90">
       <Card title="Billing" note="When gyms are reminded and when unpaid gyms are suspended automatically.">
         <div className="grid gap-5 sm:grid-cols-2">
           {num('graceDays', 'Grace period after the due date (days)')}
@@ -59,14 +84,11 @@ export const PlatformSettingsForm = () => {
       <Card title="Default plans for new gyms" note="Copied into every new gym. Gym admins can change their own plans afterwards.">
         <DefaultPlansEditor vm={vm} />
       </Card>
+      </fieldset>
 
       {vm.error && <div role="alert" className="rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">{vm.error}</div>}
       {vm.notice && <div role="status" className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">{vm.notice}</div>}
 
-      <div className="sticky bottom-0 flex gap-3 border-t border-coal-600 bg-charcoal/95 py-4 backdrop-blur">
-        <Button onClick={vm.save} disabled={!vm.isDirty || vm.isSaving}>{vm.isSaving ? 'Saving…' : 'Save settings'}</Button>
-        <Button variant="outline" onClick={vm.discard} disabled={!vm.isDirty}>Discard changes</Button>
-      </div>
     </div>
   )
 }

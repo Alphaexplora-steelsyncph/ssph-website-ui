@@ -1,4 +1,4 @@
-import { ArrowUpCircle } from 'lucide-react'
+import { ArrowUpCircle, CalendarClock } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Avatar } from '../../../../shared/components/Avatar'
@@ -10,10 +10,12 @@ import { formatDate, formatPeso } from '../../../../shared/utils/format'
 import { useUserManagementViewModel } from '../viewModels/useUserManagementViewModel'
 import { CollectBalanceDialog } from './CollectBalanceDialog'
 import type { PlanDialogMode } from '../viewModels/useReinstateMemberViewModel'
+import { PayInstallmentDialog } from './PayInstallmentDialog'
 import { ReinstateMemberDialog } from './ReinstateMemberDialog'
 
 const statusStyles: Record<MembershipStatus, string> = {
   Active: 'bg-emerald-500/15 text-emerald-400',
+  Paused: 'bg-orange-500/15 text-orange-400',
   Expired: 'bg-amber-500/15 text-amber-400',
   Terminated: 'bg-red-500/15 text-red-400',
 }
@@ -29,6 +31,8 @@ export const UserManagementTable = () => {
   const [planDialog, setPlanDialog] = useState<{ member: MemberRecord; mode: PlanDialogMode } | null>(null)
   // UI-local state: the member whose balance is being collected
   const [collecting, setCollecting] = useState<MemberRecord | null>(null)
+  // UI-local state: the member whose next monthly payment is being recorded
+  const [payingNext, setPayingNext] = useState<MemberRecord | null>(null)
 
   return (
     <div>
@@ -101,12 +105,25 @@ export const UserManagementTable = () => {
                     </div>
                   </div>
                 </td>
-                <td className="whitespace-nowrap px-4 py-3">{m.plan}</td>
+                <td className="whitespace-nowrap px-4 py-3">
+                  {m.plan}
+                  {m.installmentsTotal != null && (
+                    <p className="text-xs text-steel">
+                      Installment · {m.installmentsPaid ?? 0} of {m.installmentsTotal} paid
+                      {m.paidUntil && <span className="block">Paid until {formatDate(m.paidUntil)}</span>}
+                    </p>
+                  )}
+                </td>
                 <td className="whitespace-nowrap px-4 py-3 text-steel">{formatDate(m.memberSince)}</td>
                 <td className="whitespace-nowrap px-4 py-3 text-steel">{formatDate(m.expiresAt)}</td>
                 <td className="px-4 py-3">
                   <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusStyles[m.status]}`}>{m.status}</span>
                   {m.checkInBlocked && <p className="mt-1.5 text-xs font-semibold text-red-400">Check-in blocked</p>}
+                  {m.status === 'Paused' && (
+                    <p className="mt-1.5 text-xs font-semibold text-orange-400">
+                      Monthly payment due · {m.monthsBehind ?? 1} month{(m.monthsBehind ?? 1) === 1 ? '' : 's'} behind
+                    </p>
+                  )}
                   {m.expiringSoon && m.daysLeft !== null && (
                     <p className="mt-1.5 text-xs font-semibold text-amber-400">{m.daysLeft === 0 ? 'Ends today' : `Ends in ${m.daysLeft} day${m.daysLeft === 1 ? '' : 's'}`}</p>
                   )}
@@ -133,6 +150,17 @@ export const UserManagementTable = () => {
                         className="inline-flex items-center gap-1.5 rounded bg-ember px-3 py-1.5 text-xs font-semibold text-charcoal hover:bg-ember-600"
                       >
                         <ArrowUpCircle size={14} aria-hidden="true" /> Upgrade plan
+                      </button>
+                    </RoleGuard>
+                  )}
+                  {m.canPayInstallment && (
+                    <RoleGuard requiredPermission={PERMISSIONS.ENROLL_MEMBERS}>
+                      <button
+                        type="button"
+                        onClick={() => setPayingNext(m)}
+                        className="inline-flex items-center gap-1.5 rounded bg-ember px-3 py-1.5 text-xs font-semibold text-charcoal hover:bg-ember-600"
+                      >
+                        <CalendarClock size={14} aria-hidden="true" /> Pay for next payment due
                       </button>
                     </RoleGuard>
                   )}
@@ -209,6 +237,18 @@ export const UserManagementTable = () => {
           onUpdated={(updated) => {
             replaceMember(updated)
             setCollecting(null)
+          }}
+        />
+      )}
+
+      {payingNext && (
+        <PayInstallmentDialog
+          key={payingNext.id}
+          member={payingNext}
+          onClose={() => setPayingNext(null)}
+          onUpdated={(updated) => {
+            replaceMember(updated)
+            setPayingNext(null)
           }}
         />
       )}

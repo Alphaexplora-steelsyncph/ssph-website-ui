@@ -17,6 +17,10 @@ const CoachLayout = lazy(() => import('./shared/components/CoachLayout'))
 const Landing = lazy(() => import('./features/marketing/landing/views/Landing'))
 const GymPortal = lazy(() => import('./features/gym-portal/views/GymPortal'))
 
+// features/legal: public Privacy Policy and Terms of Service (also on a gym's own address)
+const PrivacyPolicy = lazy(() => import('./features/legal/views/PrivacyPolicy'))
+const Terms = lazy(() => import('./features/legal/views/Terms'))
+
 // features/member/*
 const MemberLogin = lazy(() => import('./features/member/login/views/MemberLogin'))
 const MemberRegister = lazy(() => import('./features/member/register/views/MemberRegister'))
@@ -72,6 +76,8 @@ export default function App() {
         <Routes>
           {/* Member / public */}
           <Route path="/" element={gymSlug ? <GymPortal slug={gymSlug} /> : <Landing />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<Terms />} />
           <Route path="/login" element={<MemberLogin />} />
           <Route path="/register" element={<MemberRegister />} />
           <Route path="/activate" element={<ActivateAccount />} />

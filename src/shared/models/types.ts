@@ -7,7 +7,7 @@ export interface Gym {
   id: string
   slug: string
   name: string
-  memberDuesEnabled?: boolean // Alphaexplora switched on a fixed member payment day for this gym
+  memberDuesEnabled?: boolean // ALPHAEXPLORA switched on a fixed member payment day for this gym
   memberDueDay?: number | null // the day (1–28) the gym admin picked
 }
 
@@ -45,7 +45,8 @@ export interface RegisterMemberPayload extends LoginPayload {
 
 /** Plan name as shown to people. Plans are defined per gym in Settings. */
 export type MembershipPlan = string
-export type MembershipStatus = 'Active' | 'Expired' | 'Terminated'
+/** Paused = paying monthly, the plan is still running, but the months paid ran out (cannot check in until they pay). */
+export type MembershipStatus = 'Active' | 'Paused' | 'Expired' | 'Terminated'
 
 export interface MemberRecord {
   id: string
@@ -53,6 +54,8 @@ export interface MemberRecord {
   email: string // empty for walk-ins enrolled without an email
   phone?: string
   city?: string // city / municipality only, e.g. "Calamba City, Laguna"
+  consentAt?: string // when the gym recorded that the member saw the privacy notice and agreed
+  erased?: boolean // personal data erased on request: only an empty shell is kept
   plan: MembershipPlan
   memberSince: string // ISO date
   expiresAt: string // ISO date
@@ -64,11 +67,22 @@ export interface MemberRecord {
   photoUrl?: string // short-lived link to the member's photo (absent = no photo yet)
   daysLeft: number | null // days until the plan ends (0 = last day today); null unless Active
   expiringSoon: boolean // Active and ending within 14 days: member is notified, plan can be upgraded
+  paymentOption?: PaymentOption // how the member pays for the plan
+  installmentsTotal?: number // monthly: months in the plan (absent = paid in full)
+  installmentsPaid?: number // monthly: months paid so far
+  installmentAmount?: number // monthly: price per month the member agreed to
+  paidUntil?: string // monthly: last day covered by the months paid (YYYY-MM-DD)
+  installmentStart?: string // monthly: first day of the term; months are counted from it
+  monthsBehind?: number // monthly: missed months to pay now to be covered again (0 = up to date)
+  canPayInstallment: boolean // monthly: a payment can be recorded now (also in advance)
   checkInBlocked: boolean // the front desk stopped this member from checking in
   blockReason?: string
 }
 
 export type DurationUnit = 'days' | 'months'
+
+/** 'full' = the plan price paid up front. 'monthly' = the plan's monthly price, paid every month of the plan. */
+export type PaymentOption = 'full' | 'monthly'
 
 /** Fields an admin edits for a plan. */
 export interface PlanInput {
@@ -76,6 +90,7 @@ export interface PlanInput {
   price: number
   durationValue: number
   durationUnit: DurationUnit
+  monthlyPrice: number | null // price per month when paying monthly (null = full payment only; plans of 2+ months)
   isActive: boolean // offered at the desk / in Enroll
 }
 
@@ -85,6 +100,25 @@ export interface PlanOption extends PlanInput {
 
 export interface GymSettingsUpdate {
   name: string
+}
+
+/** Settings page: everything it shows, loaded in one call. */
+export interface GymSettingsBundle {
+  gym: Gym
+  qr: GymQr
+  plans: PlanOption[]
+}
+
+/** Settings page "Done": only what changed, sent in one call. */
+export interface GymSettingsSave {
+  name?: string
+  memberDueDay?: number
+  regenerateQr?: boolean
+  plans?: { create: PlanInput[]; update: (PlanInput & { id: string })[]; delete: string[] }
+}
+
+export interface GymSettingsSaveResult extends GymSettingsBundle {
+  user: User
 }
 
 /** Returned after the gym is renamed: the gym plus the refreshed signed-in user. */
@@ -126,6 +160,8 @@ export interface EnrollMemberPayload {
   email?: string
   phone?: string
   city?: string
+  /** The front desk confirms the member read the privacy notice and agreed. */
+  privacyConsent: true
   planId: string
   startDate: string // YYYY-MM-DD
   payment: PaymentInput
@@ -133,6 +169,9 @@ export interface EnrollMemberPayload {
   balance?: BalanceInput
   /** Gym with a fixed payment day + plan longer than a month: payment covers only the days until that day. */
   alignToDueDate?: boolean
+  /** Full payment, or monthly (plans with a monthly price); monthsPaid = months this first payment covers. */
+  paymentOption?: PaymentOption
+  monthsPaid?: number
   logFirstVisit: boolean
 }
 
@@ -141,12 +180,26 @@ export interface ReinstateMemberPayload {
   planId: string
   payment: PaymentInput
   balance?: BalanceInput
+  paymentOption?: PaymentOption
+  monthsPaid?: number
 }
 
 /** Pay all or part of a member's balance. dueOn moves the due date of what is still owed. */
 export interface CollectBalancePayload {
   payment: PaymentInput
   dueOn?: string
+}
+
+/** Monthly payments: how many months this payment covers (missed months first, then advance). */
+export interface PayInstallmentPayload {
+  months: number
+  payment: PaymentInput
+}
+
+/** The day a member paid on (nothing else is shown to the member or in the member's list). */
+export interface PaymentDate {
+  id: string
+  paidAt: string // ISO timestamp
 }
 
 export interface CollectBalanceResult {
@@ -254,11 +307,21 @@ export interface AddExistingMemberPayload {
   email: string
   phone?: string
   city?: string
+  privacyConsent: true
   planId: string
   memberSince: string // YYYY-MM-DD, today or earlier
   expiresAt: string // YYYY-MM-DD, taken from the gym's old records
   balanceAmount?: number // what they still owe, from the gym's old records
   balanceDueOn?: string // YYYY-MM-DD
+  /** Full payment, or installment with the months already paid before SteelSync. */
+  paymentOption?: PaymentOption
+  monthsAlreadyPaid?: number
+}
+
+/** Switch a member who pays in full to installment for the rest of the current plan. */
+export interface SwitchToInstallmentPayload {
+  paymentOption: 'monthly'
+  monthsAlreadyPaid: number
 }
 
 /** Mirrors the backend error contract: { error: { code, message, details } } */
@@ -394,6 +457,27 @@ export interface GymDetail extends GymSummary {
   features: GymFeatureState[]
 }
 
+/** Gym page "Save": everything changed in one edit session (sent once, with the proof file if any). */
+export interface GymChanges {
+  profile?: GymProfileInput
+  memberDuesEnabled?: boolean
+  features?: { key: FeatureKey; value: boolean | null }[]
+  admins?: { invite: string[]; disable: string[]; enable: string[]; resetPassword: string[] }
+  billing?: { record?: Omit<RecordGymPaymentPayload, 'proofPath' | 'proofFileName'>; void: { period: string; reason: string }[] }
+}
+
+export interface GymChangesResult {
+  detail: GymDetail
+  issuedLinks: { kind: 'invite' | 'reset'; email: string; token: string }[]
+}
+
+/** Packages page "Save": new, changed and removed packages, sent once. */
+export interface PackageChanges {
+  create: PackageInput[]
+  update: (PackageInput & { id: string })[]
+  delete: string[]
+}
+
 export interface GymProfileInput {
   name: string
   slug: string
@@ -431,6 +515,7 @@ export interface PlatformOverview {
   checkInsToday: number
   attention: GymSummary[]
   recentActivity: AuditEntry[]
+  /** Health details (Coach add-on) across all gyms; at the registration threshold the NPC asks us to register. */
 }
 
 export interface BillingOverview {
@@ -589,10 +674,8 @@ export interface TrainingProgram {
   categories: ProgramCategory[]
 }
 
-/** Body details the coach keeps (the member sees them read only). */
+/** The coach's notes about a member (the member sees them read only). */
 export interface TrainingProfile {
-  weightKg: number | null
-  heightCm: number | null
   remarks: string
   updatedAt?: string
 }
@@ -695,7 +778,7 @@ export interface GymSite {
   roles: ('Member' | 'Admin' | 'Coach')[] // Coach only when the gym has the Coach App
 }
 
-/** Website "Contact us" form. Emailed to the Alphaexplora team (and a copy to the sender); not stored. */
+/** Website "Contact us" form. Emailed to the ALPHAEXPLORA team (and a copy to the sender); not stored. */
 export interface InquiryPayload {
   firstName: string
   lastName: string
@@ -712,6 +795,8 @@ export interface InquiryPayload {
     street: string
   }
   landmark: string
+  /** The person agreed that we use their details to reply (privacy notice). */
+  privacyConsent: true
   /** Hidden anti-spam field: always empty for people. */
   website: string
 }

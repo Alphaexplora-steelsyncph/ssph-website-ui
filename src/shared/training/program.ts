@@ -44,16 +44,6 @@ export const upcomingWeeks = (program: TrainingProgram, hideCompleted: boolean) 
   return current === null ? program.weeks : program.weeks.filter((w) => w.id >= current)
 }
 
-/** Body mass index from kg and cm, one decimal (null when either is missing). */
-export const bmi = (weightKg: number | null, heightCm: number | null) => {
-  if (!weightKg || !heightCm) return null
-  const m = heightCm / 100
-  return Math.round((weightKg / (m * m)) * 10) / 10
-}
-
-export const bmiLabel = (value: number) =>
-  value < 18.5 ? 'Underweight' : value < 25 ? 'Normal' : value < 30 ? 'Overweight' : 'Obese'
-
 /* ---------- Edits (each returns a new program; nothing is mutated) ---------- */
 
 const emptyBag = (typeId: CategoryTypeId) => Object.fromEntries(getCategoryType(typeId).progressionColumns.map((c) => [c.key, '']))

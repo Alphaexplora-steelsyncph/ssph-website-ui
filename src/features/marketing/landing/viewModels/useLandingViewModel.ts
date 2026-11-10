@@ -9,7 +9,7 @@ import { PRODUCT_NAME, exampleGymAddress } from '../../../../shared/brand/produc
 export const INQUIRY_EMAIL = 'inquire@alphaexplora.com'
 
 const inquiryBody = [
-  'Hi Alphaexplora team,',
+  'Hi ALPHAEXPLORA team,',
   '',
   `I'd like to know more about ${PRODUCT_NAME} for my gym.`,
   '',

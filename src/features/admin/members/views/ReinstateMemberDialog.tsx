@@ -6,7 +6,9 @@ import { Modal } from '../../../../shared/components/Modal'
 import { PaymentDetailsFields } from '../../../../shared/components/PaymentDetailsFields'
 import { TextField } from '../../../../shared/components/TextField'
 import type { MemberRecord } from '../../../../shared/models/types'
-import { formatDate, formatDuration, formatPeso } from '../../../../shared/utils/format'
+import { formatDate } from '../../../../shared/utils/format'
+import { planPriceLabel, planTermLabel } from '../../../../shared/utils/planBilling'
+import { PaymentOptionFields } from '../../../../shared/components/PaymentOptionFields'
 import { UpgradeTimeline } from './UpgradeTimeline'
 import { useReinstateMemberViewModel, type PlanDialogMode } from '../viewModels/useReinstateMemberViewModel'
 
@@ -91,14 +93,25 @@ export const ReinstateMemberDialog = ({ member, onClose, onReinstated, mode = 'r
                       {selected && <Check size={16} className="shrink-0 text-ember" aria-hidden="true" />}
                       {p.name}
                     </span>
-                    <span className={`font-semibold ${selected ? 'text-ember' : 'text-zinc-100'}`}>{formatPeso(p.price)}</span>
+                    <span className={`font-semibold ${selected ? 'text-ember' : 'text-zinc-100'}`}>{planPriceLabel(p)}</span>
                   </span>
-                  <span className="mt-0.5 block text-xs text-steel">{formatDuration(p.durationValue, p.durationUnit)} access</span>
+                  <span className="mt-0.5 block text-xs text-steel">{planTermLabel(p)}</span>
                 </button>
               )
             })}
           </div>
           {vm.fieldErrors.plan && <p className="mt-2 text-sm text-red-400">{vm.fieldErrors.plan}</p>}
+
+          <div className="mt-4">
+            <PaymentOptionFields
+              plan={vm.selectedPlan}
+              option={vm.paymentOption}
+              onOption={vm.setPaymentOption}
+              months={vm.monthsNow}
+              onMonths={vm.setMonthsNow}
+              paidUntil={vm.paidUntil}
+            />
+          </div>
 
           {upgrading ? (
             <UpgradeTimeline currentEnd={member.expiresAt} newStart={vm.expiryDate ? vm.startDate : null} newEnd={vm.expiryDate} />

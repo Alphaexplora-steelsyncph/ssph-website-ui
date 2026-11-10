@@ -6,25 +6,12 @@ import type { CoachClientDetail } from '../../../../shared/models/types'
 import { useProgramExport } from '../../../../shared/training/useProgramExport'
 
 interface ProfileDraft {
-  weightKg: string
-  heightCm: string
   remarks: string
 }
 
-const toDraft = (d: CoachClientDetail): ProfileDraft => ({
-  weightKg: d.profile.weightKg?.toString() ?? '',
-  heightCm: d.profile.heightCm?.toString() ?? '',
-  remarks: d.profile.remarks,
-})
+const toDraft = (d: CoachClientDetail): ProfileDraft => ({ remarks: d.profile.remarks })
 
-const parseMeasure = (value: string, label: string, min: number, max: number): [number | null, string | undefined] => {
-  if (!value.trim()) return [null, undefined]
-  const n = Number(value)
-  if (!Number.isFinite(n) || n < min || n > max) return [null, `${label} must be between ${min} and ${max}.`]
-  return [Math.round(n * 10) / 10, undefined]
-}
-
-/** Coach's page for one client: who they are, body details, the current program, download, remove. */
+/** Coach's page for one client: who they are, your notes, the current program, download, remove. */
 export const useCoachClientViewModel = () => {
   const { memberId = '' } = useParams()
   const navigate = useNavigate()
@@ -35,9 +22,9 @@ export const useCoachClientViewModel = () => {
   const [justSaved] = useState(() => !!(location.state as { justSaved?: boolean } | null)?.justSaved)
   const [unchanged] = useState(() => !!(location.state as { unchanged?: boolean } | null)?.unchanged)
 
-  const [draft, setDraft] = useState<ProfileDraft>({ weightKg: '', heightCm: '', remarks: '' })
+  const [draft, setDraft] = useState<ProfileDraft>({ remarks: '' })
   const [editingProfile, setEditingProfile] = useState(false)
-  const [profileErrors, setProfileErrors] = useState<{ weightKg?: string; heightCm?: string; form?: string }>({})
+  const [profileErrors, setProfileErrors] = useState<{ form?: string }>({})
   const [isSavingProfile, setIsSavingProfile] = useState(false)
 
   const [confirmRemove, setConfirmRemove] = useState(false)
@@ -63,19 +50,13 @@ export const useCoachClientViewModel = () => {
 
   const saveProfile = async (e: FormEvent) => {
     e.preventDefault()
-    const [weightKg, weightErr] = parseMeasure(draft.weightKg, 'Weight (kg)', 20, 400)
-    const [heightCm, heightErr] = parseMeasure(draft.heightCm, 'Height (cm)', 80, 260)
-    if (weightErr || heightErr) {
-      setProfileErrors({ weightKg: weightErr, heightCm: heightErr })
-      return
-    }
     try {
       setIsSavingProfile(true)
-      const profile = await saveTrainingProfile(memberId, { weightKg, heightCm, remarks: draft.remarks.trim() })
+      const profile = await saveTrainingProfile(memberId, { remarks: draft.remarks.trim() })
       setDetail((d) => (d ? { ...d, profile } : d))
       setEditingProfile(false)
     } catch (err) {
-      setProfileErrors({ form: err instanceof ApiError ? err.message : 'Could not save the details.' })
+      setProfileErrors({ form: err instanceof ApiError ? err.message : 'Could not save the notes.' })
     } finally {
       setIsSavingProfile(false)
     }

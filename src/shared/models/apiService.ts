@@ -36,6 +36,9 @@ import type {
   GymProfileInput,
   GymQr,
   GymRenameResult,
+  GymSettingsBundle,
+  GymSettingsSave,
+  GymSettingsSaveResult,
   GymSettingsUpdate,
   GymSummary,
   InquiryPayload,
@@ -57,6 +60,9 @@ import type {
   UpdateMemberPayload,
   PlatformOverview,
   PlatformSettings,
+  GymChanges,
+  GymChangesResult,
+  PackageChanges,
   ReceiptUpload,
   RecentCheckIn,
   EmailNotice,
@@ -83,6 +89,9 @@ import type {
   ProgramVersion,
   TrainingProfile,
   TrainingProgram,
+  PayInstallmentPayload,
+  SwitchToInstallmentPayload,
+  PaymentDate,
 } from './types'
 
 export class ApiError extends Error {
@@ -300,6 +309,20 @@ export const renewMember = (memberId: string, payload: ReinstateMemberPayload) =
 export const upgradeMember = (memberId: string, payload: ReinstateMemberPayload) =>
   patch<ReinstateResult>(`/members/${enc(memberId)}/upgrade`, payload)
 
+/** Record the next monthly payment of a member on a monthly plan (one more month of access). */
+export const payInstallment = (memberId: string, payload: PayInstallmentPayload) =>
+  post<ReinstateResult>(`/members/${enc(memberId)}/installments`, payload)
+
+/** A member who pays in full switches to installment for the rest of the current plan. */
+export const switchToInstallment = (memberId: string, payload: SwitchToInstallmentPayload) =>
+  patch<MemberRecord>(`/members/${enc(memberId)}/payment-option`, payload)
+
+/** The dates a member paid on, newest first. */
+export const fetchMemberPaymentDates = (memberId: string) => get<PaymentDate[]>(`/members/${enc(memberId)}/payments`)
+
+/** The signed-in member's own payment dates, newest first. */
+export const fetchMyPaymentDates = () => get<PaymentDate[]>('/me/payments')
+
 /** Record a payment against a member's balance. */
 export const collectBalance = (memberId: string, payload: CollectBalancePayload) =>
   post<CollectBalanceResult>(`/members/${enc(memberId)}/balance/payments`, payload)
@@ -324,13 +347,24 @@ export const enrollMember = (payload: EnrollMemberPayload) => post<EnrollmentRes
 export const addExistingMember = (payload: AddExistingMemberPayload) =>
   post<AddExistingMemberResult>('/members/existing', payload)
 
+/** Erases a member's personal data on request. Cannot be undone. */
+export const eraseMember = (memberId: string) => post<{ erased: boolean }>(`/members/${enc(memberId)}/erase`, { confirm: true })
+
+/** Everything the gym holds about one member (a copy for the member's request). */
+export const exportMemberData = (memberId: string) => get<Record<string, unknown>>(`/members/${enc(memberId)}/export`)
+
 export const fetchMyGym = () => get<Gym>('/gym')
 
 export const updateGymSettings = (update: GymSettingsUpdate) => patch<GymRenameResult>('/gym', update)
-/** The day of the month this gym's members pay on (only when Alphaexplora switched the feature on). */
+/** The day of the month this gym's members pay on (only when ALPHAEXPLORA switched the feature on). */
 export const setMemberDueDay = (dueDay: number) => patch<GymRenameResult>('/gym/member-due-day', { dueDay })
 
 export const fetchAllPlans = () => get<PlanOption[]>('/plans/all')
+
+/** Settings page: gym, QR and every plan in one call. */
+export const fetchGymSettings = () => get<GymSettingsBundle>('/gym/settings')
+/** Settings page "Done": every change of the edit session in one call. */
+export const saveGymSettings = (changes: GymSettingsSave) => put<GymSettingsSaveResult>('/gym/settings', changes)
 export const createPlan = (input: PlanInput) => post<PlanOption>('/plans', input)
 export const updatePlan = (planId: string, input: PlanInput) => put<PlanOption>(`/plans/${enc(planId)}`, input)
 export const deletePlan = (planId: string) => del<{ id: string }>(`/plans/${enc(planId)}`)
@@ -430,7 +464,7 @@ export const restoreProgramVersion = (memberId: string, versionId: string) =>
   post<ProgramSaveResult>(`/coach/clients/${enc(memberId)}/history/${enc(versionId)}/restore`)
 
 /* ------------------------------------------------------------------ */
-/* Platform (Alphaexplora super admin)                                 */
+/* Platform (ALPHAEXPLORA super admin)                                 */
 /* ------------------------------------------------------------------ */
 
 export const fetchPlatformOverview = () => get<PlatformOverview>('/platform/overview')
@@ -468,6 +502,14 @@ export const voidGymPayment = (gymId: string, period: string, reason: string) =>
 export const setGymFeatureOverride = (gymId: string, feature: FeatureKey, value: boolean | null) =>
   put<GymDetail>(`/platform/gyms/${enc(gymId)}/features/${enc(feature)}`, { value })
 
+/** Gym page "Save": every change of the edit session in one request (with the proof of payment, if any). */
+export const saveGymChanges = (gymId: string, changes: GymChanges, proof: File | null) => {
+  const form = new FormData()
+  form.append('changes', JSON.stringify(changes))
+  if (proof) form.append('proof', proof)
+  return data<GymChangesResult>('PUT', `/platform/gyms/${enc(gymId)}/changes`, { form })
+}
+
 export const inviteGymAdmin = (gymId: string, email: string) =>
   post<{ detail: GymDetail; inviteToken: string }>(`/platform/gyms/${enc(gymId)}/admins`, { email })
 
@@ -490,6 +532,8 @@ export const createPackage = (input: PackageInput) => post<PackageOption>('/plat
 export const updatePackage = (packageId: string, input: PackageInput) =>
   put<PackageOption>(`/platform/packages/${enc(packageId)}`, input)
 export const deletePackage = (packageId: string) => del<{ id: string }>(`/platform/packages/${enc(packageId)}`)
+/** Packages page "Save": every change of the edit session in one request. Returns the full list. */
+export const savePackageChanges = (changes: PackageChanges) => put<PackageOption[]>('/platform/packages', changes)
 
 /** One page of the audit log, newest first, with the total for the same filters. */
 export const fetchAuditLog = (filter: { gymId?: string; query?: string } = {}, limit = 10, offset = 0) =>

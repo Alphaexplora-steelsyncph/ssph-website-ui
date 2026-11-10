@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { ApiError, enrollMember, fetchPaymentMethods, fetchPlans, setMemberPhoto, uploadReceipt } from '../../../../shared/models/apiService'
-import type { EnrollmentResult, PaymentMethod, PlanOption } from '../../../../shared/models/types'
+import type { EnrollmentResult, PaymentMethod, PaymentOption, PlanOption } from '../../../../shared/models/types'
 import { useAuth } from '../../../../shared/auth/useAuth'
 import { computeExpiry, todayISO } from '../../../../shared/utils/dates'
 import { dayBefore, isLongPlan, nextMemberDueDate } from '../../../../shared/utils/memberDues'
+import { amountFor, offersMonthly } from '../../../../shared/utils/planBilling'
 import { resizeToSquareJpeg } from '../../../../shared/utils/resizeImage'
 import { isEmail } from '../../../../shared/utils/validators'
 
 
-type Field = 'fullName' | 'email' | 'phone' | 'plan' | 'startDate' | 'amount' | 'referenceNo' | 'dueOn' | 'periodAmount'
+type Field = 'fullName' | 'email' | 'phone' | 'plan' | 'startDate' | 'amount' | 'referenceNo' | 'dueOn' | 'periodAmount' | 'privacyConsent'
 export type EnrollErrors = Partial<Record<Field, string>>
 
 const PH_MOBILE = /^(09|\+639)\d{9}$/
@@ -25,6 +26,7 @@ export const useEnrollMemberViewModel = () => {
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [city, setCity] = useState('') // city / municipality only
+  const [privacyConsent, setPrivacyConsentState] = useState(false) // the front desk confirms the member agreed
   // Member photo taken at the desk (optional). Saved right after the enrollment.
   const [photo, setPhoto] = useState<File | null>(null)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
@@ -34,6 +36,9 @@ export const useEnrollMemberViewModel = () => {
   // Plan
   const [planId, setPlanId] = useState('')
   const [startDate, setStartDate] = useState(todayISO)
+  // Full payment, or monthly (plans with a monthly price) and how many months are paid now
+  const [paymentOption, setPaymentOptionState] = useState<PaymentOption>('full')
+  const [monthsNow, setMonthsNowState] = useState(1)
 
   // Payment
   const [amount, setAmountState] = useState('')
@@ -73,23 +78,26 @@ export const useEnrollMemberViewModel = () => {
   }, [])
 
   const selectedPlan = useMemo(() => plans.find((p) => p.id === planId) ?? null, [plans, planId])
+  const monthly = paymentOption === 'monthly' && offersMonthly(selectedPlan)
   /**
    * Gym with a fixed member payment day + a plan longer than one month: the plan starts on the next payment day,
    * the member pays now only for the days before it, and the plan price is due on that day.
    */
   const paymentDayStart =
-    memberDueDay && selectedPlan && startDate && isLongPlan(selectedPlan) ? nextMemberDueDate(startDate, memberDueDay) : null
+    memberDueDay && selectedPlan && startDate && !monthly && isLongPlan(selectedPlan) ? nextMemberDueDate(startDate, memberDueDay) : null
   const aligned = !!paymentDayStart
   const coveredUntil = paymentDayStart ? dayBefore(paymentDayStart) : null
   const planStart = paymentDayStart ?? startDate
   const expiryDate = selectedPlan && planStart ? computeExpiry(planStart, selectedPlan) : null
+  /** Monthly: the last day the months paid now cover (the plan itself runs until expiryDate). */
+  const paidUntil = monthly && startDate ? computeExpiry(startDate, { durationValue: monthsNow, durationUnit: 'months' }) : null
   const needsReference = method !== 'Cash'
   /** Day-based passes (walk-ins) can be enrolled without an email. */
   const emailRequired = selectedPlan?.durationUnit !== 'days'
   const startsToday = startDate === todayISO()
   /** Unpaid part of the plan price (0 when paid in full or more). */
   const balanceLeft =
-    !aligned && selectedPlan && Number(amount) > 0 ? Math.max(0, Math.round((selectedPlan.price - Number(amount)) * 100) / 100) : 0
+    !aligned && !monthly && selectedPlan && Number(amount) > 0 ? Math.max(0, Math.round((selectedPlan.price - Number(amount)) * 100) / 100) : 0
   /** What is recorded as paid today. */
   const amountToPay = aligned ? periodAmount : amount
 
@@ -98,8 +106,26 @@ export const useEnrollMemberViewModel = () => {
     setPlanId(nextId)
     setError(null)
     setFieldErrors((prev) => ({ ...prev, plan: undefined, amount: amountEdited ? prev.amount : undefined, email: undefined }))
-    const price = plans.find((p) => p.id === nextId)?.price
-    if (!amountEdited && price !== undefined) setAmountState(String(price))
+    const plan = plans.find((p) => p.id === nextId)
+    setPaymentOptionState('full')
+    setMonthsNowState(1)
+    if (!amountEdited && plan) setAmountState(String(plan.price))
+  }
+
+  /** Switching full/monthly or the months paid now re-fills the amount with what that costs. */
+  const refill = (option: PaymentOption, months: number) => {
+    if (selectedPlan) setAmountState(String(amountFor(selectedPlan, option, months)))
+    setAmountEdited(false)
+    setError(null)
+    setFieldErrors((prev) => ({ ...prev, amount: undefined }))
+  }
+  const setPaymentOption = (option: PaymentOption) => {
+    setPaymentOptionState(option)
+    refill(option, monthsNow)
+  }
+  const setMonthsNow = (months: number) => {
+    setMonthsNowState(months)
+    refill(paymentOption, months)
   }
 
   const setAmount = clearing<string>('amount', (value) => {
@@ -114,6 +140,7 @@ export const useEnrollMemberViewModel = () => {
     else if (email.trim() && !isEmail(email)) errors.email = 'Enter a valid email address.'
     const cleanPhone = phone.replace(/[\s-]/g, '')
     if (cleanPhone && !PH_MOBILE.test(cleanPhone)) errors.phone = 'Use a PH mobile number, e.g. 0917 123 4567.'
+    if (!privacyConsent) errors.privacyConsent = 'Confirm that the member has read the privacy notice and agrees.'
     if (!selectedPlan) errors.plan = 'Choose a plan.'
     if (!startDate) errors.startDate = 'Choose a start date.'
     if (aligned) {
@@ -147,6 +174,7 @@ export const useEnrollMemberViewModel = () => {
         email: email.trim() || undefined,
         phone: phone.replace(/[\s-]/g, '') || undefined,
         city: city || undefined,
+        privacyConsent: true,
         planId: selectedPlan.id,
         startDate,
         payment: {
@@ -158,6 +186,8 @@ export const useEnrollMemberViewModel = () => {
         },
         balance: balanceLeft > 0 && keepBalance ? { dueOn: dueOn || undefined } : undefined,
         alignToDueDate: aligned,
+        paymentOption: monthly ? 'monthly' : 'full',
+        monthsPaid: monthly ? monthsNow : undefined,
         logFirstVisit: logFirstVisit && startsToday,
       })
       if (photo) {
@@ -194,8 +224,11 @@ export const useEnrollMemberViewModel = () => {
     setEmail('')
     setPhone('')
     setCity('')
+    setPrivacyConsentState(false)
     setPlanId('')
     setStartDate(todayISO())
+    setPaymentOptionState('full')
+    setMonthsNowState(1)
     setAmountState('')
     setAmountEdited(false)
     setMethod(paymentMethods[0] ?? 'Cash')
@@ -216,11 +249,13 @@ export const useEnrollMemberViewModel = () => {
     email, setEmail: clearing('email', setEmail),
     phone, setPhone: clearing('phone', setPhone),
     city, setCity,
+    privacyConsent, setPrivacyConsent: clearing('privacyConsent', setPrivacyConsentState),
     emailRequired,
     photoPreview, capturing, openCapture: () => setCapturing(true), closeCapture: () => setCapturing(false), acceptPhoto, clearPhoto, photoFailed,
     planId, selectPlan, selectedPlan,
     startDate, setStartDate: clearing('startDate', setStartDate),
     expiryDate, startsToday,
+    paymentOption, setPaymentOption, monthsNow, setMonthsNow, monthly, paidUntil,
     memberDueDay, aligned, paymentDayStart, coveredUntil, planStart,
     periodAmount, setPeriodAmount: clearing('periodAmount', setPeriodAmountState), amountToPay,
     amount, setAmount,

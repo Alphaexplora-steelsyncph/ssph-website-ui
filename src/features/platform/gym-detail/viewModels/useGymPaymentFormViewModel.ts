@@ -57,20 +57,17 @@ export const useGymPaymentFormViewModel = (vm: GymDetailVM, initialPeriod: strin
     const found = validate()
     setErrors(found)
     if (Object.keys(found).length) return
-    const saved = await vm.recordPayment(
+    // Saved right away in one request (with the proof); the dialog closes when it succeeds.
+    await vm.recordPayment(
       { period, amount: Number(amount), method, referenceNo: referenceNo.trim() || undefined, paidOn, notes: notes.trim() || undefined },
       proof,
     )
-    if (saved) {
-      // Ready for the next month: the parent re-mounts this form with the refreshed gym (keyed by payment count).
-      setProof(null)
-    }
   }
 
   return {
     periods,
     methods: METHODS,
-    isSaving: vm.busy === 'pay',
+    isSaving: vm.isRecording,
     disabled: gym.status === 'Archived',
     period,
     setPeriod,

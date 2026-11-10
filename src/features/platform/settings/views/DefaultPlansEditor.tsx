@@ -38,18 +38,22 @@ export const DefaultPlansEditor = ({ vm }: { vm: PlatformSettingsVM }) => (
                 </div>
               </td>
               <td className="py-1.5 text-right">
-                <button type="button" onClick={() => vm.removePlan(i)} aria-label={`Remove ${p.name || 'plan'}`}
-                  className="rounded border border-red-500/40 p-2 text-red-400 hover:bg-red-500/10">
-                  <Trash2 size={14} />
-                </button>
+                {vm.editing && (
+                  <button type="button" onClick={() => vm.removePlan(i)} aria-label={`Remove ${p.name || 'plan'}`}
+                    className="rounded border border-red-500/40 p-2 text-red-400 hover:bg-red-500/10">
+                    <Trash2 size={14} />
+                  </button>
+                )}
               </td>
             </tr>
           ))}
         </tbody>
       </table>
     </div>
-    <button type="button" onClick={vm.addPlan} className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-ember hover:underline">
-      <Plus size={16} /> Add plan
-    </button>
+    {vm.editing && (
+      <button type="button" onClick={vm.addPlan} className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-ember hover:underline">
+        <Plus size={16} /> Add plan
+      </button>
+    )}
   </div>
 )

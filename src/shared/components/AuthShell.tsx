@@ -33,7 +33,7 @@ export const AuthShell = ({ badge, title, subtitle, headline, blurb, children, f
         <p className="font-display text-6xl font-extrabold uppercase leading-[0.95]">{headline}</p>
         <p className="mt-5 text-lg text-steel">{blurb}</p>
       </div>
-      <p className="relative text-sm text-steel/70">Lift. Scan. Sync. — by Alphaexplora Inc.</p>
+      <p className="relative text-sm text-steel/70">Lift. Scan. Sync. — by ALPHAEXPLORA INC.</p>
     </aside>
 
     {/* Form panel */}
@@ -55,6 +55,9 @@ export const AuthShell = ({ badge, title, subtitle, headline, blurb, children, f
         <p className="mt-3 text-steel">{subtitle}</p>
         <div className="mt-8">{children}</div>
         {footer && <div className="mt-6 text-center text-sm text-steel">{footer}</div>}
+        <p className="mt-8 text-center text-xs text-steel/80">
+          <Link to="/privacy" className="hover:underline">Privacy Policy</Link> · <Link to="/terms" className="hover:underline">Terms</Link>
+        </p>
       </div>
     </main>
   </div>

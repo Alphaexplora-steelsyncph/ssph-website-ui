@@ -34,7 +34,7 @@ export const addDays = (iso: string, days: number) => {
   return toISODate(d)
 }
 
-const addMonths = (iso: string, months: number) => {
+export const addMonths = (iso: string, months: number) => {
   const start = parseISODate(iso)
   const target = new Date(start.getFullYear(), start.getMonth() + months, 1)
   const lastDay = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate()

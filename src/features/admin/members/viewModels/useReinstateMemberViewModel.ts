@@ -8,8 +8,9 @@ import {
   upgradeMember,
   uploadReceipt,
 } from '../../../../shared/models/apiService'
-import type { MemberRecord, PaymentMethod, PlanOption } from '../../../../shared/models/types'
+import type { MemberRecord, PaymentMethod, PaymentOption, PlanOption } from '../../../../shared/models/types'
 import { addDays, computeExpiry, todayISO } from '../../../../shared/utils/dates'
+import { amountFor, offersMonthly } from '../../../../shared/utils/planBilling'
 
 /** Shortest plan first (a month is counted as 30 days only for ordering). */
 const lengthInDays = (p: PlanOption) => p.durationValue * (p.durationUnit === 'months' ? 30 : 1)
@@ -42,6 +43,8 @@ export const useReinstateMemberViewModel = (
   const [receiptFile, setReceiptFile] = useState<File | null>(null)
   const [keepBalance, setKeepBalanceState] = useState(true)
   const [dueOn, setDueOnState] = useState('')
+  const [paymentOption, setPaymentOptionState] = useState<PaymentOption>('full')
+  const [monthsNow, setMonthsNowState] = useState(1)
 
   const [fieldErrors, setFieldErrors] = useState<ReinstateErrors>({})
   const [error, setError] = useState<string | null>(null)
@@ -79,10 +82,13 @@ export const useReinstateMemberViewModel = (
   const selectedPlan = useMemo(() => plans.find((p) => p.id === planId) ?? null, [plans, planId])
   /** When the new period begins: today, or the day after the current period for an upgrade. */
   const startDate = mode === 'upgrade' ? addDays(member.expiresAt, 1) : todayISO()
+  const monthly = paymentOption === 'monthly' && offersMonthly(selectedPlan)
   const expiryDate = selectedPlan ? computeExpiry(startDate, selectedPlan) : null
+  /** Monthly: last day the months paid now cover. */
+  const paidUntil = monthly ? computeExpiry(startDate, { durationValue: monthsNow, durationUnit: 'months' }) : null
   const needsReference = method !== 'Cash'
   /** Unpaid part of the plan price (0 when paid in full or more). */
-  const balanceLeft = selectedPlan && Number(amount) > 0 ? Math.max(0, Math.round((selectedPlan.price - Number(amount)) * 100) / 100) : 0
+  const balanceLeft = selectedPlan && !monthly && Number(amount) > 0 ? Math.max(0, Math.round((selectedPlan.price - Number(amount)) * 100) / 100) : 0
 
   const clear = (field: Field) => {
     setError(null)
@@ -94,7 +100,23 @@ export const useReinstateMemberViewModel = (
     setPlanId(nextId)
     clear('plan')
     const price = plans.find((p) => p.id === nextId)?.price
+    setPaymentOptionState('full')
+    setMonthsNowState(1)
     if (!amountEdited && price !== undefined) setAmountState(String(price))
+  }
+  /** Switching full/monthly or the months paid now re-fills the amount with what that costs. */
+  const refill = (option: PaymentOption, months: number) => {
+    if (selectedPlan) setAmountState(String(amountFor(selectedPlan, option, months)))
+    setAmountEdited(false)
+    clear('amount')
+  }
+  const setPaymentOption = (option: PaymentOption) => {
+    setPaymentOptionState(option)
+    refill(option, monthsNow)
+  }
+  const setMonthsNow = (months: number) => {
+    setMonthsNowState(months)
+    refill(paymentOption, months)
   }
   const setAmount = (value: string) => {
     setAmountEdited(true)
@@ -152,6 +174,8 @@ export const useReinstateMemberViewModel = (
           receiptFileName: receipt?.fileName,
         },
         balance: balanceLeft > 0 && keepBalance ? { dueOn: dueOn || undefined } : undefined,
+        paymentOption: monthly ? 'monthly' : 'full',
+        monthsPaid: monthly ? monthsNow : undefined,
       })
       onReinstated(result.member)
     } catch (err) {
@@ -178,6 +202,12 @@ export const useReinstateMemberViewModel = (
     selectedPlan,
     startDate,
     expiryDate,
+    paymentOption,
+    setPaymentOption,
+    monthsNow,
+    setMonthsNow,
+    monthly,
+    paidUntil,
     amount,
     setAmount,
     method,

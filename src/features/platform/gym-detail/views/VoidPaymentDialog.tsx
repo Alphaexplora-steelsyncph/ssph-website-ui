@@ -25,14 +25,14 @@ export const VoidPaymentDialog = ({ row, gymName, isSaving, onConfirm, onClose }
         <>
           <Button variant="outline" onClick={onClose} disabled={isSaving}>Cancel</Button>
           <Button onClick={() => onConfirm(reason.trim())} disabled={!valid || isSaving}>
-            {isSaving ? 'Voiding…' : 'Void payment'}
+            {isSaving ? 'Voiding…' : 'Void on Save'}
           </Button>
         </>
       }
     >
       <p>
         The {formatPeso(row.amount)} payment from <span className="font-semibold text-zinc-100">{gymName}</span> for {row.periodLabel} will be
-        voided and the month will be unpaid again (auto-suspend rules apply). It stays in the payment log.
+        voided when you press Save, and the month will be unpaid again (auto-suspend rules apply). It stays in the payment log.
       </p>
       <label className="mt-4 block">
         <span className="mb-1.5 block text-sm font-medium text-steel">Reason</span>

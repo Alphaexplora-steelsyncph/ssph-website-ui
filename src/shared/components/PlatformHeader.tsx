@@ -23,7 +23,7 @@ export const PlatformHeader = () => {
         <div className="flex items-center gap-3">
           <Logo to="/platform" />
           <span className="hidden rounded border border-ember/50 px-2 py-0.5 text-xs font-semibold uppercase tracking-widest text-ember sm:inline">
-            Alphaexplora
+            ALPHAEXPLORA
           </span>
         </div>
         {user && <ProfileMenu name={user.fullName} email={user.email} links={LINKS} onSignOut={signOut} />}

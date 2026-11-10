@@ -6,7 +6,7 @@ import { ApiError, fetchMembers, terminateMember as terminateMemberRecord } from
 import type { MemberRecord, MembershipStatus } from '../../../../shared/models/types'
 
 export type StatusFilter = 'All' | MembershipStatus | 'Balance due'
-const STATUS_FILTERS: StatusFilter[] = ['All', 'Active', 'Expired', 'Terminated', 'Balance due']
+const STATUS_FILTERS: StatusFilter[] = ['All', 'Active', 'Paused', 'Expired', 'Terminated', 'Balance due']
 
 /** Members who still owe the gym money (terminated accounts are not chased). */
 /** Unpaid now. A plan payment scheduled for the gym's payment day does not count until that day. */

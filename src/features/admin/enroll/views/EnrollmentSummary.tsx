@@ -27,6 +27,13 @@ export const EnrollmentSummary = ({ vm }: { vm: EnrollMemberVM }) => {
           <Row label="Starts" value={vm.startDate ? formatDate(vm.startDate) : '—'} />
         )}
         <Row label="Valid until" value={vm.expiryDate ? formatDate(vm.expiryDate) : '—'} />
+        {vm.monthly && vm.selectedPlan && (
+          <>
+            <Row label="Payment" value={`Installment · ${formatPeso(vm.selectedPlan.monthlyPrice ?? 0)}/month`} />
+            <Row label="Months paid now" value={`${vm.monthsNow} of ${vm.selectedPlan.durationValue}`} />
+            <Row label="Covered until" value={vm.paidUntil ? formatDate(vm.paidUntil) : '—'} />
+          </>
+        )}
         <Row label="Method" value={vm.method} />
       </dl>
       <div className="mt-3 flex items-baseline justify-between border-t border-coal-500 pt-4">
@@ -41,7 +48,7 @@ export const EnrollmentSummary = ({ vm }: { vm: EnrollMemberVM }) => {
           <span className="font-display text-xl font-bold text-zinc-100">{formatPeso(vm.selectedPlan.price)}</span>
         </div>
       )}
-      {!vm.aligned && vm.selectedPlan && vm.amount && amount !== vm.selectedPlan.price && (
+      {!vm.aligned && !vm.monthly && vm.selectedPlan && vm.amount && amount !== vm.selectedPlan.price && (
         <p className="mt-2 text-xs text-amber-400">List price is {formatPeso(vm.selectedPlan.price)}.</p>
       )}
       {vm.balanceLeft > 0 && vm.keepBalance && (
