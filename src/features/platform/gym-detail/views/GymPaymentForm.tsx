@@ -1,9 +1,10 @@
-import { Paperclip, Plus, X } from 'lucide-react'
+import { AlertTriangle, Paperclip, Plus, X } from 'lucide-react'
 import { RoleGuard } from '../../../../shared/auth/RoleGuard'
 import { PERMISSIONS } from '../../../../shared/auth/permissions'
 import { Button } from '../../../../shared/components/Button'
 import { TextField } from '../../../../shared/components/TextField'
 import { Modal } from '../../../../shared/components/Modal'
+import { todayISO } from '../../../../shared/utils/dates'
 import { useGymPaymentFormViewModel } from '../viewModels/useGymPaymentFormViewModel'
 import type { GymDetailVM } from '../viewModels/useGymDetailViewModel'
 
@@ -13,7 +14,7 @@ const input =
 
 /** Record the gym's SteelSync payment. Owns the form ViewModel; keyed by the parent so it starts fresh after saving. */
 const Form = ({ vm }: { vm: GymDetailVM }) => {
-  const f = useGymPaymentFormViewModel(vm, vm.payFor)
+  const f = useGymPaymentFormViewModel(vm, vm.payPeriod)
 
   if (f.periods.length === 0) {
     return <p className="mt-4 text-sm text-steel">Every open month is paid. Nothing to record right now.</p>
@@ -153,6 +154,9 @@ const Form = ({ vm }: { vm: GymDetailVM }) => {
 export const GymPaymentForm = ({ vm }: { vm: GymDetailVM }) => {
   const gym = vm.gym!
   const unpaid = gym.billingHistory.filter((r) => !r.paid).length
+  // Months already past their due date and still unpaid (history is newest first, so the oldest is last).
+  const overdue = gym.billingHistory.filter((r) => !r.paid && r.dueDate < todayISO())
+  const oldestOverdue = overdue[overdue.length - 1]
   return (
     <RoleGuard requiredPermission={PERMISSIONS.PLATFORM_MANAGE_BILLING}>
       <section id="record-payment" className="rounded-xl border border-coal-600 bg-coal-800 p-5 sm:p-6">
@@ -161,9 +165,17 @@ export const GymPaymentForm = ({ vm }: { vm: GymDetailVM }) => {
           The gym's SteelSync bill. Each payment is added to the payment log below.
           {unpaid > 0 ? ` ${unpaid} month${unpaid === 1 ? '' : 's'} unpaid.` : ' Every month on record is paid.'}
         </p>
-        <Button className="mt-5" onClick={vm.openPayment} disabled={gym.status === 'Archived'}>
-          <Plus size={18} /> Record a payment
-        </Button>
+        <div className="mt-5 flex flex-wrap gap-3">
+          {oldestOverdue && (
+            <Button onClick={() => vm.openPaymentFor(oldestOverdue.period)} disabled={gym.status === 'Archived'}>
+              <AlertTriangle size={18} /> Pay overdue · {oldestOverdue.periodLabel}
+            </Button>
+          )}
+          <Button variant={oldestOverdue ? 'outline' : 'primary'} onClick={vm.openPayment} disabled={gym.status === 'Archived'}>
+            <Plus size={18} /> Record a payment
+          </Button>
+        </div>
+        {overdue.length > 1 && <p className="mt-2 text-xs text-steel">{overdue.length} months are overdue. Pay overdue starts with the oldest.</p>}
         {gym.status === 'Archived' && <p className="mt-2 text-xs text-steel">Restore the gym to record payments.</p>}
       </section>
       <Modal open={vm.paymentOpen} size="lg" title={`Record a payment · ${gym.name}`} onClose={vm.isRecording ? () => undefined : vm.closePayment}>
