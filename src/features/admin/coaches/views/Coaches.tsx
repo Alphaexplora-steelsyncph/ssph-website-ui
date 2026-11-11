@@ -32,7 +32,7 @@ const CoachesPage = () => {
   )
 }
 
-/** Page container. Shown only when the gym has the Coach App add-on. */
+/** Page container. Shown only when the gym has the Coach App add-ons. */
 const Coaches = memo(() => (
   <FeatureGuard feature="coach_app" fallback={<LockedFeature feature="coach_app" audience="admin" />}>
     <CoachesPage />
