@@ -9,7 +9,7 @@ const DROP = ['md:mt-0', 'md:mt-16', 'md:-mt-6', 'md:mt-10']
 export const RolesSection = ({ vm }: { vm: LandingVM }) => (
   <section data-morph="blob" className="floor-speckle relative overflow-hidden py-28 sm:py-36">
     <div className="mx-auto max-w-6xl px-5">
-      <p className="font-mono text-xs uppercase tracking-[0.2em] text-steel">For the whole gym</p>
+      <p className="font-mono text-xs uppercase tracking-[0.2em] text-steel">Gym software for the whole gym</p>
       <h2 className="mt-3 max-w-3xl font-display text-[clamp(2.8rem,7vw,5.5rem)] uppercase leading-[0.9]">
         One system, <span className="text-outline">four people.</span>
       </h2>

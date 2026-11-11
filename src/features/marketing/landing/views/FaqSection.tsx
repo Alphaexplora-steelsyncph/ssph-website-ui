@@ -1,9 +1,21 @@
 import { Plus } from 'lucide-react'
+import { useMemo } from 'react'
+import { JsonLd } from '../../../../shared/seo/JsonLd'
 import type { LandingVM } from '../viewModels/useLandingViewModel'
 
 /** Native <details> accordion: works without JavaScript, keyboard friendly. */
-export const FaqSection = ({ vm }: { vm: LandingVM }) => (
+export const FaqSection = ({ vm }: { vm: LandingVM }) => {
+  const schema = useMemo(
+    () => ({
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: vm.faqs.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+    }),
+    [vm.faqs],
+  )
+  return (
   <section id="faq" data-morph="faq" className="relative scroll-mt-16 py-28 sm:py-36">
+    <JsonLd id="ld-faq" data={schema} />
     <div className="mx-auto grid max-w-6xl gap-10 px-5 md:grid-cols-[1fr_1.6fr]">
       <div className="md:sticky md:top-28 md:self-start">
         <p className="font-mono text-xs uppercase tracking-[0.2em] text-steel">FAQ</p>
@@ -29,4 +41,5 @@ export const FaqSection = ({ vm }: { vm: LandingVM }) => (
       </div>
     </div>
   </section>
-)
+  )
+}

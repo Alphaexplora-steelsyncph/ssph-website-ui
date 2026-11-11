@@ -7,7 +7,7 @@ import type { LandingVM } from '../viewModels/useLandingViewModel'
 export const HeroSection = ({ vm }: { vm: LandingVM }) => (
   <section data-morph="plate" className="floor-speckle relative overflow-hidden">
     <div className="mx-auto flex min-h-[calc(100svh-4rem)] max-w-6xl flex-col justify-center px-5 pb-28 pt-14">
-      <Tape>For gym owners</Tape>
+      <Tape>Gym management system · Philippines</Tape>
       <h1 className="mt-7 font-display text-[clamp(3.6rem,13vw,10rem)] uppercase leading-[0.86]">
         <span className="block">No more</span>
         <span className="block text-outline">logbooks.</span>
@@ -18,8 +18,8 @@ export const HeroSection = ({ vm }: { vm: LandingVM }) => (
         </span>
       </h1>
       <p className="mt-8 max-w-xl text-lg text-chalk-2 sm:text-xl">
-        {vm.productName} is the front desk system for local gyms: QR check-in at the door, members and plans, GCash and cash payments, and
-        coach programs. One system, on the phones you already have.
+        {vm.productName} is gym management software for local gyms in the Philippines: QR code check-in at the door, membership tracking,
+        GCash and cash payment records, and coach programs. One system, on the phones you already have.
       </p>
       <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
         <a href={vm.contactHref} onClick={vm.goTo('contact')} className="inline-flex items-center justify-center gap-2 rounded-full bg-chalk px-7 py-3.5 font-display text-xl uppercase tracking-wider text-ink hover:bg-ember-600">

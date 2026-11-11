@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /coach
+Disallow: /member
+Disallow: /platform
+Disallow: /login
+Disallow: /register
+Disallow: /activate
+Disallow: /check-in
+
+Sitemap: https://steelsync.ph/sitemap.xml

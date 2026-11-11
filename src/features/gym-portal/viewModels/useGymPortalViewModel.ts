@@ -1,4 +1,4 @@
-import { Dumbbell, ShieldCheck, UserRound, type LucideIcon } from 'lucide-react'
+import { Dumbbell, Settings, UserRound, type LucideIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../../shared/auth/useAuth'
 import { PRODUCT_NAME } from '../../../shared/brand/product'
@@ -9,15 +9,14 @@ import { ROOT_DOMAIN, gymSiteLabel } from '../../../shared/tenant/tenant'
 export interface RoleChoice {
   role: GymSite['roles'][number]
   label: string
-  line: string
   to: string
   icon: LucideIcon
 }
 
 const CHOICES: RoleChoice[] = [
-  { role: 'Member', label: 'Member', line: 'Check in, see your plan and visits.', to: '/login', icon: UserRound },
-  { role: 'Admin', label: 'Gym admin', line: 'Front desk: members, payments, visits.', to: '/admin/login', icon: ShieldCheck },
-  { role: 'Coach', label: 'Coach', line: 'Your clients and their programs.', to: '/coach/login', icon: Dumbbell },
+  { role: 'Member', label: 'Member', to: '/login', icon: UserRound },
+  { role: 'Admin', label: 'Gym Admin', to: '/admin/login', icon: Settings },
+  { role: 'Coach', label: 'Coach', to: '/coach/login', icon: Dumbbell },
 ]
 
 /** "<slug>.steelsync.ph": the gym's own page. Pick who you are, then log in. Coach shows only with the Coach App. */
