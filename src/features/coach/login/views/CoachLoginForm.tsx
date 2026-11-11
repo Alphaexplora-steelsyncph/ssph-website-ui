@@ -1,6 +1,5 @@
 import { LogIn } from 'lucide-react'
 import { Button } from '../../../../shared/components/Button'
-import { DemoCredentials } from '../../../../shared/components/DemoCredentials'
 import { TextField } from '../../../../shared/components/TextField'
 import { useCoachLoginViewModel } from '../viewModels/useCoachLoginViewModel'
 
@@ -43,7 +42,6 @@ export const CoachLoginForm = () => {
           )}
         </Button>
       </form>
-      <DemoCredentials email="coach@steelsync.ph" password="Coach@123" />
     </>
   )
 }
