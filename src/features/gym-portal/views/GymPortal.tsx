@@ -20,7 +20,7 @@ const GymPortal = memo(({ slug }: { slug: string }) => {
 
       <header className="relative mx-auto flex w-full max-w-5xl items-center justify-between px-5 py-5">
         <span className="flex items-center gap-2 text-chalk">
-          <LogoMark className="h-7 w-7" />
+          <LogoMark className="h-8 w-auto" />
           <span className="font-mono text-xs uppercase tracking-[0.18em] text-steel">{vm.address}</span>
         </span>
         {vm.signedIn && (

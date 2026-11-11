@@ -1,24 +1,26 @@
 import { Link } from 'react-router-dom'
 
 /**
- * The plate mark: a bumper plate seen from the front whose centre hole became a check-in tick.
- * One SVG, drawn in currentColor so it follows the text colour it sits in.
+ * The SteelSync PH logo for the dark theme: chalk artwork on a transparent background.
+ * Files live in /public/brand (served as-is), so they can be swapped without touching the code.
  */
-export const LogoMark = ({ className = 'h-9 w-9' }: { className?: string }) => (
-  <svg viewBox="0 0 64 64" className={className} aria-hidden="true">
-    <circle cx="32" cy="32" r="28.5" fill="none" stroke="currentColor" strokeWidth="6" />
-    <circle cx="32" cy="32" r="19" fill="none" stroke="currentColor" strokeWidth="2" opacity=".4" />
-    <path d="M22 33l7 7 14-16" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
+const MARK_SRC = '/brand/steelsync-ph-emblem.png' // barbell + SS emblem, 800 x 407
+const LOCKUP_SRC = '/brand/steelsync-ph-lockup.png' // emblem + wordmark side by side, 1616 x 417
+const FULL_SRC = '/brand/steelsync-ph-logo.png' // emblem + wordmark + ALPHAEXPLORA INC. tape, 1200 x 915
+
+/** The barbell + SS emblem. Sizes itself from the height (`h-` with `w-auto`). */
+export const LogoMark = ({ className = 'h-9 w-auto' }: { className?: string }) => (
+  <img src={MARK_SRC} alt="" width={800} height={407} className={`object-contain ${className}`} draggable={false} />
 )
 
-/** Mark + wordmark. The wordmark is the current product name until the new name is final. */
+/** Emblem + wordmark side by side: the header version. */
 export const Logo = ({ to = '/' }: { to?: string }) => (
-  <Link to={to} className="flex items-center gap-2.5" aria-label="SteelSync PH home">
-    <LogoMark className="h-9 w-9 text-ember" />
-    <span className="font-display text-2xl leading-none tracking-wide text-zinc-100 uppercase">
-      SteelSync
-      <span className="ml-1.5 rounded border border-steel/50 px-1 py-0.5 align-middle font-mono text-[10px] text-steel">PH</span>
-    </span>
+  <Link to={to} className="flex items-center" aria-label="SteelSync PH home">
+    <img src={LOCKUP_SRC} alt="SteelSync PH" width={1616} height={417} className="h-9 w-auto sm:h-11" draggable={false} />
   </Link>
+)
+
+/** The complete logo (barbell, wordmark and ALPHAEXPLORA INC. tape) for large placements such as the sign-in side panel. */
+export const LogoFull = ({ className = 'w-56' }: { className?: string }) => (
+  <img src={FULL_SRC} alt="SteelSync PH by ALPHAEXPLORA INC." width={1200} height={915} className={className} draggable={false} />
 )

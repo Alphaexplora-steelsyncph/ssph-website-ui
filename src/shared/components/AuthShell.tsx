@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
-import { Logo } from './Logo'
+import { Logo, LogoFull } from './Logo'
 
 interface Props {
   badge: string
@@ -27,7 +27,7 @@ export const AuthShell = ({ badge, title, subtitle, headline, blurb, children, f
         }}
       />
       <div className="relative">
-        <Logo />
+        <LogoFull className="w-64" />
       </div>
       <div className="relative max-w-md">
         <p className="font-display text-6xl font-extrabold uppercase leading-[0.95]">{headline}</p>
