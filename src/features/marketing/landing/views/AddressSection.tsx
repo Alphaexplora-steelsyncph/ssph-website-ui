@@ -13,7 +13,7 @@ export const AddressSection = ({ vm }: { vm: LandingVM }) => (
   <section data-morph="qr" className="relative overflow-hidden py-28 sm:py-36">
     <div className="mx-auto grid max-w-6xl items-center gap-14 px-5 md:grid-cols-[1.1fr_1fr]">
       <div>
-        <p className="font-mono text-xs uppercase tracking-[0.2em] text-steel">Your gym, your address</p>
+        <p className="font-mono text-xs uppercase tracking-[0.2em] text-steel">Your own gym portal</p>
         <h2 className="mt-3 font-display text-[clamp(2.8rem,7vw,5.5rem)] uppercase leading-[0.9]">A link of your own.</h2>
         <p className="mt-6 max-w-lg text-lg text-chalk-2">
           Every gym gets its own address. Members, the front desk and coaches open it, pick who they are, and log in. Only your gym&apos;s

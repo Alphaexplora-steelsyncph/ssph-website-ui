@@ -6,7 +6,7 @@ import type { LandingVM } from '../viewModels/useLandingViewModel'
 export const HowSection = ({ vm }: { vm: LandingVM }) => (
   <section id="how-it-works" data-morph="phone" className="floor-speckle relative scroll-mt-16 py-28 sm:py-36">
     <div className="mx-auto max-w-6xl px-5">
-      <p className="font-mono text-xs uppercase tracking-[0.2em] text-steel">How it works</p>
+      <p className="font-mono text-xs uppercase tracking-[0.2em] text-steel">How our gym management system works</p>
       <h2 className="mt-3 font-display text-[clamp(2.8rem,7vw,5.5rem)] uppercase leading-[0.9]">Three moves.</h2>
       <div className="relative mt-16">
         <div aria-hidden="true" className="absolute bottom-0 left-4 top-0 border-l-2 border-dashed border-coal-500 md:left-1/2" />

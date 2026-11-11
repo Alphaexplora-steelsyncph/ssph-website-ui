@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { ProtectedRoute } from './shared/components/ProtectedRoute'
 import { ScrollToTop } from './shared/components/ScrollToTop'
+import { RouteSeo } from './shared/seo/RouteSeo'
 import { currentGymSlug } from './shared/tenant/tenant'
 
 /** Read once: the address of a page never changes while it is open. */
@@ -72,6 +73,7 @@ export default function App() {
   return (
     <>
       <ScrollToTop />
+      <RouteSeo />
       <Suspense fallback={<PageLoader />}>
         <Routes>
           {/* Member / public */}

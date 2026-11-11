@@ -135,6 +135,8 @@ const facts: Fact[] = [
 ]
 
 const faqs: Faq[] = [
+  { q: 'What is a gym management system?', a: `A gym management system is software that runs the front desk of a gym: member records and plans, check-in, payments and balances, and staff and coach tools. ${PRODUCT_NAME} does all of this from a phone browser.` },
+  { q: 'Is SteelSync PH made for gyms in the Philippines?', a: 'Yes. It is built for local gyms: GCash, Maya, cash and bank transfer payments, QR check-in with no turnstile to buy, and Philippine data privacy rules (RA 10173) in mind.' },
   { q: 'Do members need to download an app?', a: 'No. It works in the phone browser (Chrome, Safari). They can add it to their home screen if they want.' },
   { q: 'What do we need to get started?', a: 'A phone or laptop at the front desk, internet, and a printer for the QR poster. We set up your gym and the admin account for you.' },
   { q: 'What if the internet is down?', a: 'The front desk and the member’s phone need internet to scan. Mobile data is enough.' },
@@ -142,6 +144,9 @@ const faqs: Faq[] = [
   { q: 'Can we bring over members from our logbook?', a: 'Yes. "Add existing member" handles anyone with a running membership, keeping their original start and end dates.' },
   { q: 'How much does it cost?', a: `It depends on the size of your gym and the add-ons you need. Send us a message below (or email ${INQUIRY_EMAIL}) and we will get back to you quickly.` },
 ]
+
+/** Search-engine crawlers don't scroll, so give them the whole page up front (people still get the lazy loading). */
+const isCrawler = () => typeof navigator !== 'undefined' && /bot|crawl|spider|slurp|lighthouse|pagespeed|facebookexternalhit|preview/i.test(navigator.userAgent)
 
 const SECTION_IDS = ['how-it-works', 'features', 'faq', 'contact']
 const hashSection = () => {
@@ -165,7 +170,7 @@ export const useLandingViewModel = () => {
   const { isAuthenticated, homePath } = useAuth()
   const [copied, setCopied] = useState(false)
   // Below-the-fold sections normally mount when scrolled near; a section link (or #contact in the URL) mounts them now.
-  const [showAll, setShowAll] = useState(() => !!hashSection())
+  const [showAll, setShowAll] = useState(() => !!hashSection() || isCrawler())
 
   useEffect(() => {
     const id = hashSection()

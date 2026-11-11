@@ -11,7 +11,7 @@ export const PlatesSection = ({ vm }: { vm: LandingVM }) => (
     <div className="mx-auto max-w-6xl px-5">
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="font-mono text-xs uppercase tracking-[0.2em] text-steel">Features</p>
+          <p className="font-mono text-xs uppercase tracking-[0.2em] text-steel">Gym management features</p>
           <h2 className="mt-3 font-display text-[clamp(2.8rem,7vw,5.5rem)] uppercase leading-[0.9]">Load the bar.</h2>
         </div>
         <p className="max-w-sm text-chalk-2">Every part of {vm.productName} is a plate. Start with the core, add the add-ons when your gym is ready.</p>

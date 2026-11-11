@@ -73,19 +73,33 @@
   /* "Chalk": an SVG stroke draws itself in */
   .chalk-draw path { stroke-dasharray: var(--len, 1000); stroke-dashoffset: var(--len, 1000); }
   .chalk-draw.is-in path { animation: chalk-draw 0.9s ease-out forwards; animation-delay: var(--delay, 0.15s); }
+  /* Chalk line through text: one stroke per wrapped line (background on an inline span, cloned for every line). */
+  .chalk-strike {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 20' preserveAspectRatio='none'%3E%3Cpath d='M3 12 C 80 4, 170 17, 297 7' fill='none' stroke='%23f3efe6' stroke-width='5' stroke-linecap='round' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: 0 58%;
+    background-size: 0% 0.34em;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+    padding: 0 0.12em;
+    margin: 0 -0.12em;
+  }
+  .chalk-strike.is-in { animation: strike-in 0.7s cubic-bezier(0.3, 0.7, 0.2, 1) forwards; animation-delay: var(--delay, 0.3s); }
   /* Endless strip of words */
   .marquee { animation: marquee 32s linear infinite; }
 }
 
 @keyframes load-in { to { opacity: 1; transform: none; } }
 @keyframes rise-in { to { opacity: 1; transform: none; } }
+@keyframes strike-in { to { background-size: 100% 0.34em; } }
 @keyframes chalk-draw { to { stroke-dashoffset: 0; } }
 @keyframes marquee { to { transform: translateX(-50%); } }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .load-in, .rise-in { opacity: 1; transform: none; }
-  .load-in.is-in, .rise-in.is-in, .chalk-draw.is-in path, .marquee { animation: none; }
+  .load-in.is-in, .rise-in.is-in, .chalk-draw.is-in path, .marquee, .chalk-strike.is-in { animation: none; }
+  .chalk-strike { background-size: 100% 0.34em; }
   .chalk-draw path { stroke-dashoffset: 0; }
 }
 
