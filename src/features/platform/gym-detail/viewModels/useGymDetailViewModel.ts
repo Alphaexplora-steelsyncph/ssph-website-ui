@@ -58,6 +58,8 @@ export const useGymDetailViewModel = () => {
   const [voids, setVoids] = useState<{ period: string; reason: string }[]>([])
   // "Record a payment" works on its own (no Edit needed); opened right away from a ?pay= link.
   const [paymentOpen, setPaymentOpen] = useState(!!payFor)
+  /** Month the payment form starts on: from ?pay=YYYY-MM, or the "Pay overdue" button. Null = the oldest unpaid month. */
+  const [payPeriod, setPayPeriod] = useState<string | null>(payFor)
 
   useEffect(() => {
     Promise.all([fetchPlatformGym(gymId), fetchPackages()])
@@ -218,7 +220,7 @@ export const useGymDetailViewModel = () => {
   }
 
   return {
-    gym, payFor, packages, isLoading, error, notice, busy, issuedLinks, profileVersion,
+    gym, payPeriod, packages, isLoading, error, notice, busy, issuedLinks, profileVersion,
     clearIssuedLink: (token: string) => setIssuedLinks((l) => l.filter((x) => x.token !== token)),
     suspend, liftSuspension, archive, restore, viewAsGym,
     editing, startEditing, cancelEditing, save, isDirty, isSaving: busy === 'save',
@@ -226,7 +228,8 @@ export const useGymDetailViewModel = () => {
     featureView, setFeature, memberDuesView, memberDuesStaged: memberDues !== null, setMemberDues,
     stagedAdmins: admins, inviteAdmin, removeInvite, toggleAdmin, resetPassword,
     stagedVoids: voids, voidPayment, undoVoid,
-    paymentOpen, openPayment: () => { setError(null); setPaymentOpen(true) }, closePayment: () => setPaymentOpen(false), recordPayment, isRecording: busy === 'pay',
+    paymentOpen, openPayment: () => { setError(null); setPayPeriod(null); setPaymentOpen(true) },
+    openPaymentFor: (period: string) => { setError(null); setPayPeriod(period); setPaymentOpen(true) }, closePayment: () => setPaymentOpen(false), recordPayment, isRecording: busy === 'pay',
   }
 }
 
