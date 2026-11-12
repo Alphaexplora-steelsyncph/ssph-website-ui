@@ -1,6 +1,5 @@
 import { LogIn } from 'lucide-react'
 import { Button } from '../../../../shared/components/Button'
-import { DemoCredentials } from '../../../../shared/components/DemoCredentials'
 import { TextField } from '../../../../shared/components/TextField'
 import { useMemberLoginViewModel } from '../viewModels/useMemberLoginViewModel'
 
@@ -29,7 +28,6 @@ export const MemberLoginForm = () => {
           {isSubmitting ? 'Signing in…' : (<>Log in <LogIn size={18} /></>)}
         </Button>
       </form>
-      <DemoCredentials email="member@steelsync.ph" password="Member@123" />
     </>
   )
 }

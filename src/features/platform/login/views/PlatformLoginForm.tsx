@@ -1,6 +1,5 @@
 import { ShieldCheck } from 'lucide-react'
 import { Button } from '../../../../shared/components/Button'
-import { DemoCredentials } from '../../../../shared/components/DemoCredentials'
 import { TextField } from '../../../../shared/components/TextField'
 import { usePlatformLoginViewModel } from '../viewModels/usePlatformLoginViewModel'
 
@@ -26,7 +25,6 @@ export const PlatformLoginForm = () => {
         </Button>
       </form>
       <p className="mt-4 text-xs text-steel">Two-factor authentication is added when the backend is connected.</p>
-      <DemoCredentials email="super@steelsync.ph" password="Super@123" />
     </>
   )
 }
