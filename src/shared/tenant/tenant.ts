@@ -23,13 +23,42 @@ export const gymSlugFromHost = (hostname: string): string | null => {
   return sub
 }
 
+/**
+ * DEVELOPMENT ONLY: a phone on a tunnel (e.g. https://xxxx-5173.asse.devtunnels.ms) cannot use iron-haven.localhost,
+ * so the gym is picked with ?gym=iron-haven instead. It is remembered for the tab, so links inside the app keep
+ * working without the parameter; ?gym= (empty) goes back to the main site. Production builds ignore all of this:
+ * there, the gym always comes from the address (iron-haven.steelsync.ph).
+ */
+const DEV_GYM_KEY = 'ssph.devGym'
+const devGymSlug = (): string | null => {
+  if (!import.meta.env.DEV) return null
+  try {
+    const param = new URLSearchParams(window.location.search).get('gym')
+    if (param !== null) {
+      const slug = param.trim().toLowerCase()
+      if (slug && SLUG.test(slug) && !RESERVED.includes(slug)) sessionStorage.setItem(DEV_GYM_KEY, slug)
+      else sessionStorage.removeItem(DEV_GYM_KEY)
+    }
+    return sessionStorage.getItem(DEV_GYM_KEY)
+  } catch {
+    return null
+  }
+}
+
 /** The gym of the current address (null on the main site). Never changes while the page is open. */
-export const currentGymSlug = (): string | null => (typeof window === 'undefined' ? null : gymSlugFromHost(window.location.hostname))
+export const currentGymSlug = (): string | null => {
+  if (typeof window === 'undefined') return null
+  return gymSlugFromHost(window.location.hostname) ?? devGymSlug()
+}
 
 /** Full address of a gym's own page, e.g. https://iron-haven.steelsync.ph (http://iron-haven.localhost:5173 in dev). */
 export const gymSiteUrl = (slug: string) => {
   const { protocol, hostname, port } = window.location
   const local = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.endsWith('.localhost')
+  // Development on a tunnel: the same address, with the gym picked by ?gym= (see devGymSlug).
+  if (import.meta.env.DEV && !local && !hostname.endsWith(`.${ROOT_DOMAIN}`) && hostname !== ROOT_DOMAIN) {
+    return `${protocol}//${window.location.host}/?gym=${encodeURIComponent(slug)}`
+  }
   return local ? `${protocol}//${slug}.localhost${port ? `:${port}` : ''}` : `https://${slug}.${ROOT_DOMAIN}`
 }
 

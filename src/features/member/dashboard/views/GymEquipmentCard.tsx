@@ -1,8 +1,10 @@
-import { Dumbbell } from 'lucide-react'
+import { Dumbbell, Flag } from 'lucide-react'
+import { EquipmentPhoto } from '../../../../shared/components/EquipmentPhoto'
 import { EquipmentStatusBadge } from '../../../../shared/components/EquipmentStatusBadge'
 import { FeatureGuard } from '../../../../shared/features/FeatureGuard'
 import { LockedFeature } from '../../../../shared/features/LockedFeature'
 import { useGymEquipmentViewModel } from '../viewModels/useGymEquipmentViewModel'
+import { ReportEquipmentDialog } from './ReportEquipmentDialog'
 
 const Card = () => {
   const vm = useGymEquipmentViewModel()
@@ -23,19 +25,42 @@ const Card = () => {
       {rows.length > 0 && (
         <ul className="mt-3 divide-y divide-coal-600">
           {rows.map((i) => (
-            <li key={i.id} className="flex items-start justify-between gap-3 py-2.5 text-sm">
-              <div className="min-w-0">
+            <li key={i.id} className="flex items-center gap-3 py-2.5 text-sm">
+              <EquipmentPhoto name={i.name} photoUrl={i.photoUrl} />
+              <div className="min-w-0 flex-1">
                 <p className="font-medium">{i.name}</p>
                 {(i.note || i.area) && <p className="text-xs text-steel">{i.note ?? i.area}</p>}
               </div>
-              <EquipmentStatusBadge status={i.status} />
+              <div className="flex shrink-0 flex-col items-end gap-1">
+                <EquipmentStatusBadge status={i.status} />
+                {i.status !== 'Broken' && (
+                  <button
+                    type="button"
+                    onClick={() => vm.openReport(i.name)}
+                    className="text-xs font-semibold text-steel hover:text-zinc-100"
+                    aria-label={`Report a problem with ${i.name}`}
+                  >
+                    Report
+                  </button>
+                )}
+              </div>
             </li>
           ))}
         </ul>
       )}
-      <button type="button" onClick={vm.toggleAll} className="mt-3 text-sm font-semibold text-ember hover:underline">
-        {vm.showAll ? 'Show only what is out of order' : `See all ${vm.total} machines`}
-      </button>
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+        <button type="button" onClick={vm.toggleAll} className="text-sm font-semibold text-ember hover:underline">
+          {vm.showAll ? 'Show only what is out of order' : `See all ${vm.total} machines`}
+        </button>
+        <button
+          type="button"
+          onClick={() => vm.openReport()}
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-steel hover:text-zinc-100"
+        >
+          <Flag size={14} aria-hidden="true" /> Something not working?
+        </button>
+      </div>
+      {vm.isReporting && <ReportEquipmentDialog name={vm.reportingName} onClose={vm.closeReport} />}
     </section>
   )
 }

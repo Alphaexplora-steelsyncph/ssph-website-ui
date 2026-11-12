@@ -630,6 +630,7 @@ export interface Equipment {
   note?: string // shown to members, e.g. "Back by Friday"
   statusChangedAt: string
   updatedBy?: string // admin only
+  photoUrl?: string // short-lived signed link; absent = no photo
 }
 
 export interface EquipmentInput {
@@ -637,6 +638,12 @@ export interface EquipmentInput {
   area?: string
   status?: EquipmentStatus
   note?: string
+}
+
+/** Changes queued in Edit equipment status, saved together when the admin presses Done. */
+export interface EquipmentBatch {
+  updates: (EquipmentInput & { id: string })[]
+  removeIds: string[]
 }
 
 /* ---------- Add-on: Coach App ---------- */

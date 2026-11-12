@@ -14,12 +14,19 @@ interface Props {
 export const Modal = ({ open, title, onClose, children, footer, size = 'md' }: Props) => {
   const titleId = useId()
   const panelRef = useRef<HTMLDivElement>(null)
+  // Callers often pass a new onClose on every render (e.g. `() => setOpen(false)`). Keeping it in a ref means the
+  // effect below runs only when the dialog opens or closes. Otherwise every keystroke in a field re-ran it, which
+  // moved focus back to the panel and kicked the cursor out of the textbox after each letter.
+  const onCloseRef = useRef(onClose)
+  useEffect(() => {
+    onCloseRef.current = onClose
+  }, [onClose])
 
   useEffect(() => {
     if (!open) return
     const previouslyFocused = document.activeElement as HTMLElement | null
     panelRef.current?.focus()
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onCloseRef.current()
     document.addEventListener('keydown', onKey)
     const { overflow } = document.body.style
     document.body.style.overflow = 'hidden'
@@ -28,7 +35,7 @@ export const Modal = ({ open, title, onClose, children, footer, size = 'md' }: P
       document.body.style.overflow = overflow
       previouslyFocused?.focus()
     }
-  }, [open, onClose])
+  }, [open])
 
   if (!open) return null
 

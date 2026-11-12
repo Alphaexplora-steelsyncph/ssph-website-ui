@@ -67,6 +67,7 @@ import type {
   RecentCheckIn,
   EmailNotice,
   Equipment,
+  EquipmentBatch,
   EquipmentInput,
   ListRange,
   PaymentListItem,
@@ -423,6 +424,15 @@ export const fetchEquipment = () => get<Equipment[]>('/equipment')
 export const createEquipment = (input: EquipmentInput) => post<Equipment>('/equipment', input)
 export const updateEquipment = (id: string, input: EquipmentInput) => patch<Equipment>(`/equipment/${enc(id)}`, input)
 export const deleteEquipment = (id: string) => del<{ removed: boolean }>(`/equipment/${enc(id)}`)
+/** "Done" in Edit equipment status: every queued change in one request. Returns the fresh list. */
+export const saveEquipmentChanges = (changes: EquipmentBatch) => post<Equipment[]>('/equipment/batch', changes)
+/** Equipment photo (already shrunk by the browser to about 512 px, under 200 KB). Replaces the old one. */
+export const setEquipmentPhoto = (id: string, file: Blob) => {
+  const form = new FormData()
+  form.append('file', file, file.type === 'image/webp' ? 'photo.webp' : 'photo.jpg')
+  return data<Equipment>('PUT', `/equipment/${enc(id)}/photo`, { form })
+}
+export const removeEquipmentPhoto = (id: string) => del<Equipment>(`/equipment/${enc(id)}/photo`)
 /* Add-on: Coach App (gym admin) */
 export const fetchCoaches = () => get<CoachesOverview>('/coaches')
 export const inviteCoach = (input: { fullName: string; email: string }) =>

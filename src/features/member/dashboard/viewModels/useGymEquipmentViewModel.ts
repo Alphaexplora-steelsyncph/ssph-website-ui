@@ -7,6 +7,8 @@ export const useGymEquipmentViewModel = () => {
   const [items, setItems] = useState<Equipment[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [showAll, setShowAll] = useState(false)
+  // Report dialog: undefined = closed, null = general report, string = the machine's name.
+  const [reporting, setReporting] = useState<string | null | undefined>(undefined)
 
   useEffect(() => {
     fetchMyEquipment()
@@ -27,5 +29,9 @@ export const useGymEquipmentViewModel = () => {
     all: list,
     showAll,
     toggleAll: () => setShowAll((v) => !v),
+    isReporting: reporting !== undefined,
+    reportingName: reporting ?? null,
+    openReport: (name: string | null = null) => setReporting(name),
+    closeReport: () => setReporting(undefined),
   }
 }
