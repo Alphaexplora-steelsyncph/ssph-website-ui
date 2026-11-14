@@ -10,12 +10,10 @@
     // Single-page app: any path that is not a file (/admin/members, /coach, ...) returns index.html.
     // This replaces the old `/* /index.html 200` rule in public/_redirects.
     "not_found_handling": "single-page-application"
-  }
-
-  // CUTOVER (do NOT enable until the *.workers.dev build is verified and the old Vercel A records are removed):
-  // "routes": [
-  //   { "pattern": "steelsync.ph", "custom_domain": true },
-  //   { "pattern": "www.steelsync.ph", "custom_domain": true },
-  //   { "pattern": "*.steelsync.ph/*", "zone_name": "steelsync.ph" }
-  // ]
+  },
+  "routes": [
+    { "pattern": "steelsync.ph", "custom_domain": true },
+    { "pattern": "www.steelsync.ph", "custom_domain": true },
+    { "pattern": "*.steelsync.ph/*", "zone_name": "steelsync.ph" }
+  ]
 }
